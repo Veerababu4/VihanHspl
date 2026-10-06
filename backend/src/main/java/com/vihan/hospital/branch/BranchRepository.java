@@ -8,4 +8,8 @@ public interface BranchRepository extends JpaRepository<Branch, Long> {
 
 	List<Branch> findByActiveTrueOrderByIdAsc();
 
+	List<Branch> findAllByOrderByIdAsc();
+
+	boolean existsByCode(String code);
+
 }

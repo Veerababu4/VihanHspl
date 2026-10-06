@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Placeholder: Patient ward">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f6b66"/><stop offset="1" stop-color="#1d5fa8"/></linearGradient></defs>
+<rect width="1200" height="800" fill="url(#g)"/>
+<g fill="#fff" opacity="0.18"><rect x="470" y="230" width="260" height="260" rx="40"/></g>
+<path fill="#fff" opacity="0.9" d="M565 270h70v90h90v70h-90v90h-70v-90h-90v-70h90z"/>
+<text x="600" y="610" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="54" font-weight="700" fill="#fff">Patient ward</text>
+<text x="600" y="670" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="30" fill="#fff" opacity="0.85">Placeholder image - real photo to be added</text>
+</svg>

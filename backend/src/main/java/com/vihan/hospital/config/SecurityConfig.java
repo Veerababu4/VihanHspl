@@ -52,6 +52,7 @@ public class SecurityConfig {
 			.logout(AbstractHttpConfigurer::disable)
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers(PUBLIC_PATHS).permitAll()
+				.requestMatchers("/api/admin/**").hasRole("IT_ADMIN")   // also @PreAuthorize on each controller
 				.anyRequest().authenticated())
 			.exceptionHandling(e -> e
 				.authenticationEntryPoint((req, res, ex) -> writeError(res, objectMapper, HttpStatus.UNAUTHORIZED,

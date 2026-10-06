@@ -7,32 +7,134 @@
   "nav": {
     "home": "Home",
     "doctors": "Doctors",
+    "gallery": "Gallery",
+    "about": "About",
+    "contact": "Contact",
     "book": "Book Appointment",
-    "staffLogin": "Staff Login"
+    "bookShort": "Book",
+    "staffLogin": "Staff Login",
+    "menu": "Menu",
+    "closeMenu": "Close menu"
   },
   "banner": {
     "sampleData": "SAMPLE DATA — all doctors and patients shown are fictional, for testing only."
+  },
+  "seo": {
+    "homeTitle": "Vihan Multi Speciality Hospital — Miryalaguda, Huzurnagar, Kodad",
+    "homeDescription": "Multi speciality hospitals in Miryalaguda, Huzurnagar and Kodad. Find doctors, see timings and book appointments online.",
+    "doctorsTitle": "Our Doctors",
+    "doctorsDescription": "Specialist doctors at Vihan Multi Speciality Hospital with qualifications, experience and timings.",
+    "galleryTitle": "Gallery",
+    "aboutTitle": "About Us",
+    "contactTitle": "Contact Us",
+    "titleSuffix": " | Vihan Multi Speciality Hospital"
   },
   "home": {
     "heroTitle": "Care you can trust, close to home",
     "heroText": "Three hospitals in Miryalaguda, Huzurnagar and Kodad with experienced specialists and 24x7 emergency care.",
     "bookCta": "Book an appointment",
+    "findDoctorCta": "Find a doctor",
     "branchesTitle": "Our hospitals",
     "loadingBranches": "Loading hospitals…",
     "branchesError": "Could not load hospitals. Please try again later.",
     "emergency": "Emergency",
     "phone": "Phone",
-    "hours": "Timings"
+    "hours": "Timings",
+    "viewBranch": "View hospital",
+    "specialitiesTitle": "Specialities",
+    "featuredDoctorsTitle": "Our senior doctors",
+    "allDoctors": "See all doctors"
+  },
+  "doctors": {
+    "title": "Find a doctor",
+    "filterBranch": "Hospital",
+    "filterSpeciality": "Speciality",
+    "allBranches": "All hospitals",
+    "allSpecialities": "All specialities",
+    "search": "Search by name or speciality",
+    "count_one": "{{count}} doctor",
+    "count_other": "{{count}} doctors",
+    "none": "No doctors match your search.",
+    "clearFilters": "Clear filters",
+    "loading": "Loading doctors…",
+    "error": "Could not load doctors. Please try again later.",
+    "experience_one": "{{count}} year experience",
+    "experience_other": "{{count}} years experience",
+    "fee": "Consultation fee",
+    "feeNote": "Pay at the hospital counter",
+    "available": "Available at",
+    "viewProfile": "View profile",
+    "book": "Book appointment",
+    "languages": "Languages",
+    "registrationNo": "Registration no.",
+    "about": "About",
+    "weeklyTimings": "Weekly timings",
+    "noTimings": "Timings not published yet. Please call the hospital.",
+    "notFound": "Doctor not found."
+  },
+  "days": {
+    "1": "Monday",
+    "2": "Tuesday",
+    "3": "Wednesday",
+    "4": "Thursday",
+    "5": "Friday",
+    "6": "Saturday",
+    "7": "Sunday"
+  },
+  "branch": {
+    "notFound": "Hospital not found.",
+    "address": "Address",
+    "directions": "Get directions",
+    "mapTitle": "Map of {{city}}",
+    "doctorsHere": "Doctors at this hospital",
+    "photos": "Photos",
+    "email": "Email",
+    "district": "{{district}} district"
+  },
+  "gallery": {
+    "title": "Gallery",
+    "all": "All",
+    "empty": "No photos yet.",
+    "close": "Close",
+    "open": "Open photo: {{title}}",
+    "network": "All hospitals"
+  },
+  "about": {
+    "title": "About Vihan Multi Speciality Hospital",
+    "intro": "Vihan Multi Speciality Hospital is a network of three hospitals serving Nalgonda and Suryapet districts of Telangana, in Miryalaguda, Huzurnagar and Kodad.",
+    "mission": "Our aim is to bring specialist care close to home, so families do not have to travel far for treatment.",
+    "facilitiesTitle": "What we offer",
+    "facilities": {
+      "emergency": "24x7 emergency care",
+      "opd": "Specialist OPD consultations",
+      "surgery": "Surgery and operation theatres",
+      "diagnostics": "Laboratory and imaging",
+      "pharmacy": "In-house pharmacy",
+      "booking": "Online appointment booking"
+    }
+  },
+  "contact": {
+    "title": "Contact us",
+    "intro": "Call the hospital nearest to you. For emergencies, call the emergency number any time.",
+    "emergencyNote": "In a life-threatening emergency, call 108 or go to the nearest hospital."
+  },
+  "emergency": {
+    "button": "Emergency",
+    "call": "Call {{city}}",
+    "title": "Call emergency"
   },
   "footer": {
     "emergency": "Emergency",
-    "rights": "© {{year}} Vihan Multi Speciality Hospital"
+    "rights": "© {{year}} Vihan Multi Speciality Hospital",
+    "quickLinks": "Quick links"
   },
   "notFound": {
     "title": "Page not found",
     "back": "Go to home page"
   },
   "common": {
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "loading": "Loading…",
+    "retry": "Try again"
   }
 }

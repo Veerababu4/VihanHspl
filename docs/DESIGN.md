@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Version** | 0.4 — M1 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14) |
+| **Version** | 0.5 — M2 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18) |
 | **Date** | 2026-10-06 |
 | **Owner** | Veera |
-| **Status** | Signed off → **M1 Foundation complete (2026-10-06)** → M2 next |
+| **Status** | Signed off → M1 ✅ → **M2 public website complete (2026-10-06)** → M3 next |
 
 > **How to review:** Read sections 1–6 for *what* we are building, 7–12 for *how*, and 13–16 for setup/deployment/plan.
 > **Section 19 explains how the 8 additional requirements found during the initial review are handled.**
@@ -244,21 +244,22 @@ UI: mobile-first, responsive, hospital brand colours (to be confirmed — §17),
 |---|---|---|
 | Frontend | **React 19 + TypeScript + Vite** | SPA, built with Node 22 (already installed) |
 | UI | **Tailwind CSS** + a small component kit (shadcn/ui style) | Responsive, quick to style |
-| Frontend libs | React Router 7 (v8 needs Node ≥ 22.22), TanStack Query (API caching), React Hook Form + Zod (forms/validation), Recharts (dashboard chart), react-helmet-async (SEO meta) | |
+| Frontend libs | React Router 7 (v8 needs Node ≥ 22.22), TanStack Query (API caching), React Hook Form + Zod (forms/validation), Recharts (dashboard chart). SEO tags use React 19's built-in `<title>`/`<meta>` support (no react-helmet-async needed) | |
 | Backend | **Java 21 LTS + Spring Boot 4.1.1** (Spring Security 7, Hibernate 7.4, Jackson 3) | Single REST API, Maven wrapper (`mvnw`) — no global Maven needed |
-| Backend libs | Spring Web, Spring Data JPA (Hibernate), Spring Security, Bean Validation, Flyway, jjwt, Bucket4j (rate limit), Thumbnailator (image resize), Apache POI or OpenCSV (export), springdoc-openapi (Swagger UI) | |
+| Backend libs | Spring Web, Spring Data JPA (Hibernate), Spring Security, Bean Validation, Flyway, jjwt, Bucket4j (rate limit), Thumbnailator (image resize) + TwelveMonkeys `imageio-webp` (Java can't decode WebP by itself), Apache POI or OpenCSV (export), springdoc-openapi (Swagger UI) | |
 | Database | **Oracle** — local: Oracle Database Free; cloud: **Oracle Autonomous Database (Always Free)** | JDBC driver `ojdbc17` |
 | Migrations | **Flyway 12** (`flyway-database-oracle`) | Same scripts for local & cloud |
 | Auth | Spring Security + JWT + BCrypt | |
 | Captcha | Cloudflare Turnstile | Free |
-| Image storage | Phase 1: server disk (`/uploads`) behind a `FileStorageService` interface; later: OCI Object Storage | DB stores only URL/path |
+| Image storage | Phase 1: server disk (`/uploads`) behind a `FileStorageService` interface; later: OCI Object Storage | DB stores only the file key (`doctors/<random>.jpg`); the URL is built as `PUBLIC_FILE_BASE_URL` + key when read, so moving hosts is an `.env` change |
 | Build/CI | GitHub + GitHub Actions (build + tests) | optional but recommended |
 
 ### Where Java Collections are used (as requested)
 - **Dashboard aggregation:** fetch the day's appointments once, then `Collectors.groupingBy(branch, groupingBy(doctor, groupingBy(status, counting())))` into `Map<String, Map<Long, EnumMap<Status, Long>>>` for network → branch → doctor counts.
 - **Slot generation:** `TreeMap<LocalDate, List<SlotWindow>>` built from schedule templates, minus `Set<LocalDate>` holidays / leave dates, minus existing slots (`Set<LocalDateTime>`) to stay idempotent.
 - **Overlap validation:** sort a doctor's sessions (`List` + `Comparator`) and scan adjacent pairs.
-- **Reference-data cache:** branches & specialities in a `ConcurrentHashMap` refreshed on admin change.
+- **Reference-data cache:** branches (`LinkedHashMap` by code, display order) & specialities held as an immutable snapshot in a `volatile` field; an admin change drops it when its transaction ends and the next read reloads (`ReferenceDataCache`). Safer than clearing a shared `ConcurrentHashMap` mid-read.
+- **Doctor directory filters & profile availability:** streams + `Predicate` composition for branch / speciality / text filters; `TreeMap<branch, TreeMap<weekday, List<Session>>>` for weekly timings.
 - **Rate limiting:** `ConcurrentHashMap<String, Bucket>` keyed by IP / mobile.
 - **Duplicate patient check:** normalised-name `Set` comparison.
 
@@ -695,7 +696,7 @@ Base path `/api`. JSON. Errors use a single shape: `{ "timestamp", "status", "co
 | GET | `/public/branches` | All active branches |
 | GET | `/public/branches/{code}` | Branch detail + its doctors |
 | GET | `/public/specialities` | Specialities |
-| GET | `/public/doctors?branch=&speciality=&q=` | Doctor directory |
+| GET | `/public/doctors?branch=&speciality=&q=` | Doctor directory (not paginated: at most a few hundred doctors) |
 | GET | `/public/doctors/{id}` | Doctor profile + weekly availability |
 | GET | `/public/doctors/{id}/slots?branch=&date=` | Open slots for a date |
 | GET | `/public/gallery?branch=` | Images |
@@ -764,10 +765,12 @@ Base path `/api`. JSON. Errors use a single shape: `{ "timestamp", "status", "co
 | Method | Path |
 |---|---|
 | CRUD | `/admin/users`, `POST /admin/users/{id}/reset-password` |
-| CRUD | `/admin/doctors`, `POST /admin/doctors/{id}/photo` (multipart) |
+| CRUD | `/admin/doctors`, `POST`/`DELETE /admin/doctors/{id}/photo` (multipart) |
 | CRUD | `/admin/branches`, `POST /admin/branches/{id}/image` |
 | CRUD | `/admin/specialities` |
 | CRUD | `/admin/gallery` (multipart upload) |
+
+"Delete" for doctors, branches and specialities = `PUT` with `active: false` (master data is never hard-deleted, §9.1). A speciality with active doctors can't be deactivated (409). Gallery images are deleted for real (row + files), since nothing references them. Branch codes can't change after creation (used in URLs). `branch.map_url` must be a Google Maps embed link because the site shows it in an iframe.
 | GET | `/admin/audit-logs?user=&action=&from=&to=` |
 
 ---
@@ -840,7 +843,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173
 
 # ---- Files ----
 UPLOAD_DIR=./uploads
-PUBLIC_FILE_BASE_URL=http://localhost:8080/files
+PUBLIC_FILE_BASE_URL=/files          # same-origin via the /files proxy/rewrite
 ```
 
 ### 13.3 `frontend/.env.example`
@@ -961,8 +964,8 @@ Each milestone ends with: working build, tests passing, demo on local, your revi
 |---|---|---|
 | **M0** | Design sign-off | This document reviewed; §17 answered ✅ |
 | **M1** ✅ | Foundation | Repo + `.gitignore`, Spring Boot & React scaffolds, `.env` config, local Oracle connection, Flyway V1/V2, error handling, logging, README |
-| **M2** | Public website | Branches, specialities, doctors, doctor profile, gallery, about/contact; IT Admin doctor/branch/gallery management + image upload |
-| **M3** | Auth & users | Login (with showcase panel), JWT + refresh, roles, lockout, change/reset password, user admin, audit log |
+| **M2** ✅ | Public website | Branches, specialities, doctors, doctor profile, gallery, about/contact, mobile emergency button, SEO; IT Admin **APIs** for doctors/branches/specialities/gallery + image upload (tested with mock users). *Admin screens moved to M3, since they need login.* |
+| **M3** | Auth & users | Login (with showcase panel), JWT + refresh, roles, lockout, change/reset password, user admin, audit log; **IT Admin screens** for doctors, branches, specialities, gallery (APIs from M2) |
 | **M4** | Scheduling | Schedule templates, slot generation job, manual slots, block, leave, holidays, overlap validation |
 | **M5** | Booking | Public booking wizard, captcha, rate limits, confirmation, lookup/cancel; counter/phone booking; concurrency tests |
 | **M6** | Reception & dashboard | Appointment list, status workflow, check-in + patient linking, dashboard (doctor/branch/network), export |
@@ -1090,4 +1093,4 @@ The original input had 10 points. The initial review found **8 further requireme
 
 ---
 
-*End of document — v0.4.*
+*End of document — v0.5.*

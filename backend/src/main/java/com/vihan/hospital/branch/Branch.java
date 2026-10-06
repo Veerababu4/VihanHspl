@@ -60,6 +60,29 @@ public class Branch extends AuditableEntity {
 	protected Branch() {
 	}
 
+	public Branch(String code) {
+		this.code = code;
+	}
+
+	public void updateDetails(String name, String address, String city, String district, String pincode,
+			String phone, String emergencyPhone, String email, String mapUrl, String openingHours, boolean active) {
+		this.name = name;
+		this.address = address;
+		this.city = city;
+		this.district = district;
+		this.pincode = pincode;
+		this.phone = phone;
+		this.emergencyPhone = emergencyPhone;
+		this.email = email;
+		this.mapUrl = mapUrl;
+		this.openingHours = openingHours;
+		this.active = active;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
 	public Long getId() {
 		return id;
 	}

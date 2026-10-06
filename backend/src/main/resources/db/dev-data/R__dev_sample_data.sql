@@ -150,3 +150,19 @@ WHERE NOT EXISTS (
   SELECT 1 FROM doctor_schedule x
   WHERE x.doctor_id = n.doctor_id AND x.branch_id = n.branch_id
     AND x.day_of_week = n.dow AND x.start_time = n.start_time);
+
+-- ===== Placeholder images (served by the frontend from /placeholders; no real photos) =====
+UPDATE branch SET image_url = '/placeholders/branch.svg' WHERE image_url IS NULL;
+
+INSERT INTO gallery_image (branch_id, title, caption, image_url, thumb_url, sort_order)
+WITH g AS (
+  SELECT 'MLG' branch, 'Reception' title, 'Placeholder image' caption, '/placeholders/reception.svg' img, 1 sort_order FROM dual UNION ALL
+  SELECT 'MLG', 'Operation theatre', 'Placeholder image', '/placeholders/ot.svg', 2 FROM dual UNION ALL
+  SELECT 'HZN', 'OPD waiting area', 'Placeholder image', '/placeholders/opd.svg', 3 FROM dual UNION ALL
+  SELECT 'HZN', 'Laboratory', 'Placeholder image', '/placeholders/lab.svg', 4 FROM dual UNION ALL
+  SELECT 'KDD', 'Patient ward', 'Placeholder image', '/placeholders/ward.svg', 5 FROM dual UNION ALL
+  SELECT 'KDD', 'Pharmacy', 'Placeholder image', '/placeholders/pharmacy.svg', 6 FROM dual
+)
+SELECT b.branch_id, g.title, g.caption, g.img, g.img, g.sort_order
+FROM g JOIN branch b ON b.code = g.branch
+WHERE NOT EXISTS (SELECT 1 FROM gallery_image x WHERE x.image_url = g.img AND x.branch_id = b.branch_id);

@@ -8,21 +8,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * M1 end-to-end check on a fresh Oracle: Flyway applies V1/V2 + sample data, Hibernate validates
  * the schema, and the security / error-handling baseline behaves as designed.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
-@ActiveProfiles("local")  // includes the dev sample data, so that script is tested too
+@VihanIntegrationTest
 class FoundationIntegrationTest {
 
 	@Autowired

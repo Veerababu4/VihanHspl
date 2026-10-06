@@ -68,7 +68,8 @@ npm run dev
 ```
 
 On first start, Flyway creates the schema (`V1`), the reference data (`V2`: 3 branches, 18 specialities) and,
-in the `local` profile only, the **fictional sample data** (`db/dev-data`: 20 doctors with weekly schedules).
+in the `local` profile only, the **fictional sample data** (`db/dev-data`: 20 doctors with weekly schedules, placeholder gallery photos).
+Uploaded images go to `backend/uploads/` (git-ignored).
 The website shows a yellow **SAMPLE DATA** banner while sample data is in use.
 
 | URL | What |
@@ -94,8 +95,10 @@ Run one frontend test file: `npx vitest run src/features/public/HomePage.test.ts
 backend/
   src/main/java/com/vihan/hospital/
     config/      security, CORS, JPA auditing, OpenAPI, app properties
-    common/      error handling (ApiError), request logging, masking utils, base entity
-    branch/      first feature slice: GET /api/public/branches
+    common/      error handling (ApiError), request logging, masking, base entity, reference-data cache
+    branch/ speciality/ doctor/ gallery/   public API (/api/public/**) + IT Admin API (/api/admin/**)
+    schedule/    weekly doctor schedules (read-only until M4)
+    storage/     image upload checks, resizing, file storage, /files/** serving
   src/main/resources/
     application.yml (+ -local / -cloud)
     db/migration/  Flyway: V1 schema, V2 reference data (all environments)
@@ -104,6 +107,8 @@ frontend/
   src/api/        typed API client + React Query hooks
   src/components/ layout and shared UI
   src/features/   pages by area (public/, staff/ …)
+  src/lib/        formatting and SEO (schema.org) helpers
+  public/placeholders/  labelled placeholder images used by the local sample data
   src/locales/    UI text (en.json; Telugu in Phase 2)
 docs/DESIGN.md
 ```
