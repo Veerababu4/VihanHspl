@@ -1,0 +1,38 @@
+{
+  "brand": {
+    "name": "Vihan",
+    "fullName": "Vihan Multi Speciality Hospital",
+    "tagline": "Multi Speciality Hospital"
+  },
+  "nav": {
+    "home": "Home",
+    "doctors": "Doctors",
+    "book": "Book Appointment",
+    "staffLogin": "Staff Login"
+  },
+  "banner": {
+    "sampleData": "SAMPLE DATA — all doctors and patients shown are fictional, for testing only."
+  },
+  "home": {
+    "heroTitle": "Care you can trust, close to home",
+    "heroText": "Three hospitals in Miryalaguda, Huzurnagar and Kodad with experienced specialists and 24x7 emergency care.",
+    "bookCta": "Book an appointment",
+    "branchesTitle": "Our hospitals",
+    "loadingBranches": "Loading hospitals…",
+    "branchesError": "Could not load hospitals. Please try again later.",
+    "emergency": "Emergency",
+    "phone": "Phone",
+    "hours": "Timings"
+  },
+  "footer": {
+    "emergency": "Emergency",
+    "rights": "© {{year}} Vihan Multi Speciality Hospital"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "back": "Go to home page"
+  },
+  "common": {
+    "comingSoon": "Coming soon"
+  }
+}

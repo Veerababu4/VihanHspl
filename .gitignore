@@ -1,0 +1,32 @@
+# ---- Secrets: never commit ----
+.env
+.env.*
+!.env.example
+*.oracle-container.env
+.oracle-container.env
+wallet/
+*.jks
+*.p12
+
+# ---- Runtime data ----
+uploads/
+logs/
+*.log
+
+# ---- Backend build ----
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# ---- Frontend build ----
+node_modules/
+frontend/dist/
+frontend/coverage/
+*.local
+
+# ---- IDE / OS ----
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+# Free-hosting deployment: Oracle Autonomous DB (wallet / TLS), no sample data, Swagger off.
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 5    # Always Free ADB has a low session limit
+
+server:
+  forward-headers-strategy: framework   # behind Caddy reverse proxy
+
+logging:
+  file:
+    name: ${LOG_FILE:logs/vihan-hospital.log}
+  logback:
+    rollingpolicy:
+      max-history: 30
