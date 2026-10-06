@@ -181,7 +181,8 @@
       "logout": "Log out",
       "viewSite": "View website",
       "menu": "Menu",
-      "admin": "Administration"
+      "admin": "Administration",
+      "schedule": "Schedule"
     },
     "roles": {
       "DOCTOR": "Doctor",
@@ -325,6 +326,85 @@
       "next": "Next",
       "empty": "No entries match."
     },
-    "forbidden": "You do not have access to this page."
+    "forbidden": "You do not have access to this page.",
+    "schedule": {
+      "title": "Schedule",
+      "titleFor": "Schedule — {{name}}",
+      "chooseDoctor": "Doctor",
+      "tabs": {
+        "weekly": "Weekly timings",
+        "slots": "Slots",
+        "leave": "Leave"
+      },
+      "noBranches": "This doctor is not linked to any branch yet. Add branches on the Doctors page first.",
+      "weekly": {
+        "add": "Add session",
+        "addTitle": "New weekly session",
+        "editTitle": "Edit weekly session",
+        "empty": "No weekly sessions yet.",
+        "branch": "Branch",
+        "day": "Day",
+        "start": "Start",
+        "end": "End",
+        "slotMinutes": "Minutes per patient",
+        "effectiveFrom": "From date",
+        "effectiveTo": "Until date",
+        "effectiveToHint": "Leave empty if there is no end date.",
+        "perSession": "{{count}} slots",
+        "until": "until {{date}}",
+        "from": "from {{date}}",
+        "deleteConfirm": "Remove this weekly session? Its future open slots will be removed; booked patients will be listed for reception to call.",
+        "delete": "Remove"
+      },
+      "slots": {
+        "generate": "Generate next 14 days",
+        "blockDay": "Block whole day",
+        "unblockDay": "Unblock day",
+        "addSession": "Add extra session",
+        "addTitle": "Extra session on {{date}}",
+        "none": "No slots on this day.",
+        "legendOpen": "Open",
+        "legendBooked": "Booked",
+        "legendBlocked": "Blocked",
+        "slotLabel": "{{time}}, token {{token}}, {{status}}",
+        "clickHint": "Click an open slot to block it; click a blocked slot to open it again.",
+        "reason": {
+          "MANUAL": "blocked",
+          "LEAVE": "leave",
+          "HOLIDAY": "holiday",
+          "REMOVED": "removed from timetable"
+        }
+      },
+      "leave": {
+        "add": "Add leave",
+        "from": "From",
+        "to": "To",
+        "reason": "Reason",
+        "empty": "No upcoming leave.",
+        "remove": "Remove",
+        "removeConfirm": "Remove this leave? The slots it blocked will open again.",
+        "reasonPlaceholder": "e.g. Conference"
+      },
+      "summary": {
+        "created": "{{count}} slots created",
+        "removed": "{{count}} removed",
+        "blocked": "{{count}} blocked",
+        "reopened": "{{count}} reopened",
+        "nothing": "Saved. No slots changed.",
+        "callTitle": "Booked patients to call ({{count}})",
+        "callText": "These bookings are affected. Reception will also see them on their to-do list."
+      },
+      "holidays": {
+        "title": "Holidays",
+        "add": "Add holiday",
+        "branch": "Branch",
+        "allBranches": "All branches",
+        "date": "Date",
+        "name": "Name",
+        "empty": "No upcoming holidays.",
+        "remove": "Remove",
+        "removeConfirm": "Remove this holiday? Its slots will open again."
+      }
+    }
   }
 }

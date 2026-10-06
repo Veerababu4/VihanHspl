@@ -1,5 +1,7 @@
 package com.vihan.hospital.branch;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -14,10 +16,13 @@ import com.vihan.hospital.common.ReferenceDataCache;
 import com.vihan.hospital.common.error.ApiException.BadRequestException;
 import com.vihan.hospital.common.error.ApiException.ConflictException;
 import com.vihan.hospital.common.error.ApiException.NotFoundException;
+import com.vihan.hospital.doctor.Doctor;
 import com.vihan.hospital.doctor.DoctorDtos.DoctorSummaryDto;
+import com.vihan.hospital.doctor.DoctorRepository;
 import com.vihan.hospital.doctor.DoctorService;
 import com.vihan.hospital.gallery.GalleryDtos.GalleryImageDto;
 import com.vihan.hospital.gallery.GalleryService;
+import com.vihan.hospital.schedule.SlotReconciler;
 import com.vihan.hospital.storage.FileUrls;
 import com.vihan.hospital.storage.ImageService;
 import com.vihan.hospital.storage.ImageService.StoredImage;
@@ -37,9 +42,13 @@ public class BranchService {
 	private final ImageService images;
 	private final FileUrls fileUrls;
 	private final AuditService audit;
+	private final SlotReconciler slotReconciler;
+	private final DoctorRepository doctorRepository;
+	private final Clock clock;
 
 	public BranchService(BranchRepository branches, ReferenceDataCache cache, DoctorService doctorService,
-			GalleryService galleryService, ImageService images, FileUrls fileUrls, AuditService audit) {
+			GalleryService galleryService, ImageService images, FileUrls fileUrls, AuditService audit,
+			SlotReconciler slotReconciler, DoctorRepository doctorRepository, Clock clock) {
 		this.branches = branches;
 		this.cache = cache;
 		this.doctorService = doctorService;
@@ -47,6 +56,9 @@ public class BranchService {
 		this.images = images;
 		this.fileUrls = fileUrls;
 		this.audit = audit;
+		this.slotReconciler = slotReconciler;
+		this.doctorRepository = doctorRepository;
+		this.clock = clock;
 	}
 
 	// ---- public ----
@@ -87,10 +99,22 @@ public class BranchService {
 		if (!b.getCode().equals(req.code())) {
 			throw new BadRequestException("BRANCH_CODE_FIXED", "Branch code cannot be changed (it is used in web links)");
 		}
+		boolean activeChanged = b.isActive() != req.active();
 		apply(b, req);
 		audit.record(AuditAction.BRANCH_UPDATED, "BRANCH", id, b.getCode() + ", active=" + req.active());
 		cache.invalidate();
-		return AdminBranchDto.from(b, fileUrls);
+		AdminBranchDto dto = AdminBranchDto.from(b, fileUrls);
+		if (activeChanged) {
+			// Closing a branch removes its future open slots and flags bookings; reopening regenerates them.
+			branches.flush();
+			LocalDate today = LocalDate.now(clock);
+			doctorRepository.findAllByOrderByFullNameAsc().stream()
+				.filter(d -> d.getBranches().stream().anyMatch(x -> x.getId().equals(id)))
+				.map(Doctor::getId)
+				.toList()
+				.forEach(doctorId -> slotReconciler.reconcileAffected(doctorId, today, today.plusYears(1)));
+		}
+		return dto;
 	}
 
 	public AdminBranchDto uploadImage(Long id, MultipartFile file) {

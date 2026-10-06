@@ -165,8 +165,9 @@ export function useResetPassword() {
 }
 
 // ---- doctors ----
-export const useAdminDoctors = () =>
-  useQuery({ queryKey: ['admin', 'doctors'], queryFn: () => apiGet<AdminDoctor[]>('/admin/doctors') })
+/** @param enabled false for non-admins, who may not call /admin (e.g. a doctor on the schedule page) */
+export const useAdminDoctors = (enabled = true) =>
+  useQuery({ queryKey: ['admin', 'doctors'], queryFn: () => apiGet<AdminDoctor[]>('/admin/doctors'), enabled })
 
 export function useSaveDoctor() {
   const invalidate = useInvalidate(['admin', 'doctors'], ['doctors'], ['doctor'], ['branch'])

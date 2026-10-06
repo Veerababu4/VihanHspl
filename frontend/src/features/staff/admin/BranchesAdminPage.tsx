@@ -16,9 +16,10 @@ import {
 import { ApiError } from '../../../api/client'
 import { Seo } from '../../../components/Seo'
 import { Alert, Badge, Button, Field, inputClass, Modal, PageHeader } from '../../../components/ui'
+import { HolidaysSection } from './HolidaysSection'
 import { applyServerErrors } from '../../../lib/forms'
 
-/** Branches and specialities (FR-AD3). Holidays are added with scheduling in M4. */
+/** Branches, specialities (FR-AD3) and holidays (FR-S5). */
 export function BranchesAdminPage() {
   const { t } = useTranslation()
   const { data: branches, isError } = useAdminBranches()
@@ -84,6 +85,8 @@ export function BranchesAdminPage() {
           ))}
         </ul>
       </section>
+
+      <HolidaysSection />
 
       {branch && <BranchForm branch={branch === 'new' ? null : branch} onClose={() => setBranch(null)} />}
       {speciality && <SpecialityForm speciality={speciality === 'new' ? null : speciality} onClose={() => setSpeciality(null)} />}

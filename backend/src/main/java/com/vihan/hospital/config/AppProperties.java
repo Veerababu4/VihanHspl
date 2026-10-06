@@ -12,10 +12,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param uploadDir          folder for uploaded images (doctor photos, branch images, gallery)
  * @param publicFileBaseUrl  URL prefix the browser uses for uploaded files, e.g. {@code /files}
  * @param auth               staff login settings (DESIGN.md §12.2)
+ * @param scheduling         slot generation settings (DESIGN.md §10.2)
  */
 @ConfigurationProperties("app")
 public record AppProperties(boolean sampleData, List<String> corsAllowedOrigins, String uploadDir,
-		String publicFileBaseUrl, Auth auth) {
+		String publicFileBaseUrl, Auth auth, Scheduling scheduling) {
 
 	/**
 	 * @param jwtSecret              HMAC key for access tokens; at least 32 characters
@@ -24,6 +25,14 @@ public record AppProperties(boolean sampleData, List<String> corsAllowedOrigins,
 	 */
 	public record Auth(String jwtSecret, int accessTokenMinutes, int refreshTokenHours, int maxFailedAttempts,
 			int lockMinutes, boolean cookieSecure, String bootstrapAdminPassword, String devSamplePassword) {
+	}
+
+	/**
+	 * @param windowDays        rolling window kept generated (14 = today + 13 days)
+	 * @param maxGenerateDays   furthest ahead the manual "Generate" may go
+	 * @param generateOnStartup reconcile all doctors when the app starts
+	 */
+	public record Scheduling(int windowDays, int maxGenerateDays, boolean generateOnStartup) {
 	}
 
 }

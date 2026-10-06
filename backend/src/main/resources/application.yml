@@ -74,3 +74,7 @@ app:
     cookie-secure: true               # browsers accept Secure cookies on http://localhost too
     bootstrap-admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
     dev-sample-password: ${DEV_SAMPLE_PASSWORD:}
+  scheduling:
+    window-days: 14                   # rolling booking window (DESIGN.md §17 #5)
+    max-generate-days: 60             # "Generate" button may go this far ahead
+    generate-on-startup: true         # catch up if the server was down at the nightly run

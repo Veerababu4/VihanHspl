@@ -17,4 +17,10 @@ public interface DoctorScheduleRepository extends JpaRepository<DoctorSchedule, 
 			order by s.dayOfWeek, s.startTime""")
 	List<DoctorSchedule> findInEffect(@Param("doctorId") Long doctorId, @Param("date") LocalDate date);
 
+	/** All active templates of a doctor (any effective dates), for slot planning and the editor. */
+	List<DoctorSchedule> findByDoctorIdAndActiveTrueOrderByDayOfWeekAscStartTimeAsc(Long doctorId);
+
+	@Query("select distinct s.doctorId from DoctorSchedule s where s.active = true")
+	List<Long> findDoctorIdsWithActiveSchedules();
+
 }

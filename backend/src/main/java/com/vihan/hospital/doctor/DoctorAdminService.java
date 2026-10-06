@@ -1,5 +1,7 @@
 package com.vihan.hospital.doctor;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.Year;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +20,7 @@ import com.vihan.hospital.common.error.ApiException.ConflictException;
 import com.vihan.hospital.common.error.ApiException.NotFoundException;
 import com.vihan.hospital.doctor.DoctorDtos.AdminDoctorDto;
 import com.vihan.hospital.doctor.DoctorDtos.DoctorRequest;
+import com.vihan.hospital.schedule.SlotReconciler;
 import com.vihan.hospital.speciality.Speciality;
 import com.vihan.hospital.speciality.SpecialityRepository;
 import com.vihan.hospital.storage.FileUrls;
@@ -38,15 +41,20 @@ public class DoctorAdminService {
 	private final ImageService images;
 	private final FileUrls fileUrls;
 	private final AuditService audit;
+	private final SlotReconciler slotReconciler;
+	private final Clock clock;
 
 	public DoctorAdminService(DoctorRepository doctors, SpecialityRepository specialities, BranchRepository branches,
-			ImageService images, FileUrls fileUrls, AuditService audit) {
+			ImageService images, FileUrls fileUrls, AuditService audit,
+			SlotReconciler slotReconciler, Clock clock) {
 		this.doctors = doctors;
 		this.specialities = specialities;
 		this.branches = branches;
 		this.images = images;
 		this.fileUrls = fileUrls;
 		this.audit = audit;
+		this.slotReconciler = slotReconciler;
+		this.clock = clock;
 	}
 
 	@Transactional(readOnly = true)
@@ -80,7 +88,12 @@ public class DoctorAdminService {
 		}
 		apply(d, req);
 		audit.record(AuditAction.DOCTOR_UPDATED, "DOCTOR", id, "active=" + req.active());
-		return AdminDoctorDto.from(d, fileUrls);
+		AdminDoctorDto dto = AdminDoctorDto.from(d, fileUrls);
+		// Deactivated, or a branch removed: future open slots go, bookings are flagged (DESIGN.md §19.6).
+		doctors.flush();
+		LocalDate today = LocalDate.now(clock);
+		slotReconciler.reconcileAffected(id, today, today.plusYears(1));
+		return dto;
 	}
 
 	public AdminDoctorDto uploadPhoto(Long id, MultipartFile file) {

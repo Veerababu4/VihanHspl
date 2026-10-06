@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Version** | 0.6 — M3 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2) |
+| **Version** | 0.7 — M4 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2) |
 | **Date** | 2026-10-06 |
 | **Owner** | Veera |
-| **Status** | Signed off → M1 ✅ → M2 ✅ → **M3 auth & admin complete (2026-10-06)** → M4 next |
+| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → **M4 scheduling complete (2026-10-06)** → M5 next |
 
 > **How to review:** Read sections 1–6 for *what* we are building, 7–12 for *how*, and 13–16 for setup/deployment/plan.
 > **Section 19 explains how the 8 additional requirements found during the initial review are handled.**
@@ -640,6 +640,17 @@ CREATE INDEX ix_audit_time ON audit_log (created_at);
 | Token no. | integer per doctor/branch/day | `7` | = slot position in that session |
 
 ### 10.2 Slot generation
+
+**As built (M4):** one *reconcile* step per doctor (`SlotReconciler`) compares the slots the plan asks for (`SlotPlanner`: templates in effect × weekdays × served branches, minus leave and holidays) with the slots in the database, and applies the difference. Template edits, leave, holidays, doctor/branch deactivation, the nightly job, the startup catch-up and the "Generate" button all use it, so they behave identically:
+- Past slots and **BOOKED** slots are never changed. A booked slot that falls on new leave / a holiday / a removed session (or whose doctor or branch is deactivated) flags its appointment `needs_action` and is listed in the response as "patients to call".
+- Missing planned slots are inserted in JDBC batches (3,066 slots for 20 doctors × 14 days in ~1.4 s). Running twice changes nothing.
+- OPEN timetable slots no longer planned are deleted, or blocked if a (cancelled) appointment still refers to them.
+- `slot.block_reason` (migration V3) says why a slot is BLOCKED: `MANUAL` (only a person unblocks it), `LEAVE` / `HOLIDAY` (reopened automatically when removed), `REMOVED` (no longer in the timetable). Leave/holiday blocks can't be lifted by hand.
+- All changes use conditional updates (`… AND status = 'OPEN'`), so a booking made at the same moment is never removed; `slot.version` guards manual edits.
+- Token numbers: 1..n per doctor per branch per day across all sessions; extra (manual) sessions continue after the last token.
+- Rolling window: today + 13 days (`app.scheduling.window-days`); "Generate" may go up to 60 days ahead. A leave far ahead only fixes slots that already exist; it does not generate months of new ones.
+
+Original sketch:
 ```
 for each active doctor_schedule overlapping [from, to]:
   for each date in range where ISO day_of_week matches:
@@ -725,7 +736,10 @@ Base path `/api`. JSON. Errors use a single shape: `{ "timestamp", "status", "co
 | POST | `/staff/slots` (manual slot/session) |
 | PATCH | `/staff/slots/{id}` `{status: BLOCKED/OPEN}` |
 | GET / POST / DELETE | `/staff/doctors/{id}/leaves` |
-| GET / POST / DELETE | `/staff/holidays` (`IT_ADMIN`) |
+| GET / POST / DELETE | `/staff/holidays` (GET: all staff; POST/DELETE: `IT_ADMIN`) |
+| POST | `/staff/doctors/{id}/slots/day-status` `{date, blocked}` (block / unblock a whole day) |
+
+As built: the manual session endpoint is `POST /staff/doctors/{id}/slots` `{branchId, date, startTime, endTime, slotMinutes}`. Receptionists can **view** schedules, slots and leave (needed for counter booking in M5) but not change them. Every change returns a `ChangeSummary` (`slotsCreated / Removed / Blocked / Reopened` + `affectedBookings` with masked mobiles).
 
 ### 11.4 Staff — appointments & dashboard
 | Method | Path | Roles |
@@ -973,7 +987,7 @@ Each milestone ends with: working build, tests passing, demo on local, your revi
 | **M1** ✅ | Foundation | Repo + `.gitignore`, Spring Boot & React scaffolds, `.env` config, local Oracle connection, Flyway V1/V2, error handling, logging, README |
 | **M2** ✅ | Public website | Branches, specialities, doctors, doctor profile, gallery, about/contact, mobile emergency button, SEO; IT Admin **APIs** for doctors/branches/specialities/gallery + image upload (tested with mock users). *Admin screens moved to M3, since they need login.* |
 | **M3** ✅ | Auth & users | Login (with showcase panel), JWT + refresh, roles, lockout, change/reset password, user admin, audit log; **IT Admin screens** for doctors, branches, specialities, gallery (APIs from M2) |
-| **M4** | Scheduling | Schedule templates, slot generation job, manual slots, block, leave, holidays, overlap validation |
+| **M4** ✅ | Scheduling | Schedule templates, slot generation job, manual slots, block, leave, holidays, overlap validation |
 | **M5** | Booking | Public booking wizard, captcha, rate limits, confirmation, lookup/cancel; counter/phone booking; concurrency tests |
 | **M6** | Reception & dashboard | Appointment list, status workflow, check-in + patient linking, dashboard (doctor/branch/network), export |
 | **M7** | Patients | Registration (Aadhaar encryption, duplicates), search, profile, visit list |
@@ -1100,4 +1114,4 @@ The original input had 10 points. The initial review found **8 further requireme
 
 ---
 
-*End of document — v0.6.*
+*End of document — v0.7.*

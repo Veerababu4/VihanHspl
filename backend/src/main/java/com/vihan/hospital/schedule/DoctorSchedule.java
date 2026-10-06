@@ -1,6 +1,7 @@
 package com.vihan.hospital.schedule;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,7 +14,7 @@ import com.vihan.hospital.common.entity.AuditableEntity;
 
 /**
  * Weekly schedule template: one session of a doctor at a branch on one weekday (DESIGN.md §5.4).
- * M2 only reads it to show availability on the doctor profile; M4 adds editing and slot generation.
+ * Slots are generated from these templates (see SlotReconciler).
  */
 @Entity
 @Table(name = "doctor_schedule")
@@ -54,6 +55,39 @@ public class DoctorSchedule extends AuditableEntity {
 	private boolean active = true;
 
 	protected DoctorSchedule() {
+	}
+
+	public DoctorSchedule(Long doctorId) {
+		this.doctorId = doctorId;
+	}
+
+	public void update(Long branchId, int dayOfWeek, String startTime, String endTime, int slotMinutes,
+			LocalDate effectiveFrom, LocalDate effectiveTo) {
+		this.branchId = branchId;
+		this.dayOfWeek = dayOfWeek;
+		this.startTime = startTime;
+		this.endTime = endTime;
+		this.slotMinutes = slotMinutes;
+		this.effectiveFrom = effectiveFrom;
+		this.effectiveTo = effectiveTo;
+	}
+
+	/** Templates are never hard-deleted: past slots were generated from them. */
+	public void deactivate() {
+		this.active = false;
+	}
+
+	/** True if this template applies on the given date (ignoring the weekday). */
+	public boolean inEffectOn(LocalDate date) {
+		return active && !effectiveFrom.isAfter(date) && (effectiveTo == null || !effectiveTo.isBefore(date));
+	}
+
+	public LocalTime start() {
+		return LocalTime.parse(startTime);
+	}
+
+	public LocalTime end() {
+		return LocalTime.parse(endTime);
 	}
 
 	public Long getId() {

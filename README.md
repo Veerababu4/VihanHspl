@@ -87,7 +87,7 @@ Open http://localhost:5173/staff/login.
 | `admin` | IT Admin (created once from `BOOTSTRAP_ADMIN_PASSWORD`) | `BOOTSTRAP_ADMIN_PASSWORD` in `backend/.env`; must be changed at first login |
 | `itadmin` | IT Admin (sample) | `DEV_SAMPLE_PASSWORD` in `backend/.env` |
 | `reception.mlg`, `reception.hzn`, `reception.kdd` | Receptionist at that branch (sample) | `DEV_SAMPLE_PASSWORD` |
-| `doctor001` … `doctor020` | Doctor login for sample doctor SAMPLE-001 … 020 | `DEV_SAMPLE_PASSWORD` |
+| `doctor001` … `doctor020` | Doctor login for sample doctor SAMPLE-001 … 020 (sees only their own schedule) | `DEV_SAMPLE_PASSWORD` |
 
 Sample logins exist only in the `local` profile. Five wrong passwords lock an account for 15 minutes;
 an IT Admin can unlock it with "Reset password".
@@ -114,7 +114,7 @@ backend/
     user/        login/refresh/logout/change-password, staff user admin, bootstrap admin, local sample logins
     audit/       audit log (write + IT Admin viewer)
     branch/ speciality/ doctor/ gallery/   public API (/api/public/**) + IT Admin API (/api/admin/**)
-    schedule/    weekly doctor schedules (read-only until M4)
+    schedule/    weekly timetables, slot planner + reconciler, leave, holidays, nightly slot job
     storage/     image upload checks, resizing, file storage, /files/** serving
   src/main/resources/
     application.yml (+ -local / -cloud)
