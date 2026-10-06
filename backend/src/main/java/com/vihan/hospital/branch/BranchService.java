@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.vihan.hospital.audit.AuditAction;
+import com.vihan.hospital.audit.AuditService;
 import com.vihan.hospital.branch.BranchAdminDtos.AdminBranchDto;
 import com.vihan.hospital.branch.BranchAdminDtos.BranchRequest;
 import com.vihan.hospital.common.ReferenceDataCache;
@@ -34,15 +36,17 @@ public class BranchService {
 	private final GalleryService galleryService;
 	private final ImageService images;
 	private final FileUrls fileUrls;
+	private final AuditService audit;
 
 	public BranchService(BranchRepository branches, ReferenceDataCache cache, DoctorService doctorService,
-			GalleryService galleryService, ImageService images, FileUrls fileUrls) {
+			GalleryService galleryService, ImageService images, FileUrls fileUrls, AuditService audit) {
 		this.branches = branches;
 		this.cache = cache;
 		this.doctorService = doctorService;
 		this.galleryService = galleryService;
 		this.images = images;
 		this.fileUrls = fileUrls;
+		this.audit = audit;
 	}
 
 	// ---- public ----
@@ -73,6 +77,7 @@ public class BranchService {
 		Branch b = new Branch(req.code());
 		apply(b, req);
 		branches.save(b);
+		audit.record(AuditAction.BRANCH_CREATED, "BRANCH", b.getId(), b.getCode());
 		cache.invalidate();
 		return AdminBranchDto.from(b, fileUrls);
 	}
@@ -83,6 +88,7 @@ public class BranchService {
 			throw new BadRequestException("BRANCH_CODE_FIXED", "Branch code cannot be changed (it is used in web links)");
 		}
 		apply(b, req);
+		audit.record(AuditAction.BRANCH_UPDATED, "BRANCH", id, b.getCode() + ", active=" + req.active());
 		cache.invalidate();
 		return AdminBranchDto.from(b, fileUrls);
 	}
@@ -92,6 +98,7 @@ public class BranchService {
 		StoredImage stored = images.store(file, ImageService.Kind.BRANCH_IMAGE);
 		images.cleanupOnCompletion(b.getImageUrl() == null ? List.of() : List.of(b.getImageUrl()), stored.keys());
 		b.setImageUrl(stored.key());
+		audit.record(AuditAction.BRANCH_IMAGE_CHANGED, "BRANCH", id, b.getCode());
 		cache.invalidate();
 		return AdminBranchDto.from(b, fileUrls);
 	}

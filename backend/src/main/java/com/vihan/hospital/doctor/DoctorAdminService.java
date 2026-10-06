@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.vihan.hospital.audit.AuditAction;
+import com.vihan.hospital.audit.AuditService;
 import com.vihan.hospital.branch.Branch;
 import com.vihan.hospital.branch.BranchRepository;
 import com.vihan.hospital.common.error.ApiException.BadRequestException;
@@ -35,14 +37,16 @@ public class DoctorAdminService {
 	private final BranchRepository branches;
 	private final ImageService images;
 	private final FileUrls fileUrls;
+	private final AuditService audit;
 
 	public DoctorAdminService(DoctorRepository doctors, SpecialityRepository specialities, BranchRepository branches,
-			ImageService images, FileUrls fileUrls) {
+			ImageService images, FileUrls fileUrls, AuditService audit) {
 		this.doctors = doctors;
 		this.specialities = specialities;
 		this.branches = branches;
 		this.images = images;
 		this.fileUrls = fileUrls;
+		this.audit = audit;
 	}
 
 	@Transactional(readOnly = true)
@@ -64,6 +68,7 @@ public class DoctorAdminService {
 				req.practiceStartYear());
 		apply(d, req);
 		doctors.save(d);
+		audit.record(AuditAction.DOCTOR_CREATED, "DOCTOR", d.getId(), d.getFullName());
 		return AdminDoctorDto.from(d, fileUrls);
 	}
 
@@ -74,6 +79,7 @@ public class DoctorAdminService {
 			throw duplicateRegNo();
 		}
 		apply(d, req);
+		audit.record(AuditAction.DOCTOR_UPDATED, "DOCTOR", id, "active=" + req.active());
 		return AdminDoctorDto.from(d, fileUrls);
 	}
 
@@ -82,6 +88,7 @@ public class DoctorAdminService {
 		StoredImage stored = images.store(file, ImageService.Kind.DOCTOR_PHOTO);
 		images.cleanupOnCompletion(nullSafe(d.getPhotoUrl()), stored.keys());
 		d.setPhotoUrl(stored.key());
+		audit.record(AuditAction.DOCTOR_PHOTO_CHANGED, "DOCTOR", id, "uploaded");
 		return AdminDoctorDto.from(d, fileUrls);
 	}
 
@@ -89,6 +96,7 @@ public class DoctorAdminService {
 		Doctor d = find(id);
 		images.cleanupOnCompletion(nullSafe(d.getPhotoUrl()), List.of());
 		d.setPhotoUrl(null);
+		audit.record(AuditAction.DOCTOR_PHOTO_CHANGED, "DOCTOR", id, "removed");
 		return AdminDoctorDto.from(d, fileUrls);
 	}
 

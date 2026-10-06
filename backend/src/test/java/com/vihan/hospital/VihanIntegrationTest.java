@@ -22,6 +22,14 @@ import org.springframework.test.context.TestPropertySource;
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 @ActiveProfiles("local")
-@TestPropertySource(properties = "app.upload-dir=target/test-uploads")
+@TestPropertySource(properties = {
+		"app.upload-dir=target/test-uploads",
+		"app.auth.jwt-secret=test-secret-for-integration-tests-only-0123456789",
+		"app.auth.dev-sample-password=" + VihanIntegrationTest.SAMPLE_PASSWORD,
+		"app.auth.bootstrap-admin-password=" })
 public @interface VihanIntegrationTest {
+
+	/** Password of the sample staff logins (itadmin, reception.mlg, doctor001 …) in tests. */
+	String SAMPLE_PASSWORD = "Sample-pass-123";
+
 }

@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.vihan.hospital.audit.AuditAction;
+import com.vihan.hospital.audit.AuditService;
 import com.vihan.hospital.common.ReferenceDataCache;
 import com.vihan.hospital.common.error.ApiException.ConflictException;
 import com.vihan.hospital.common.error.ApiException.NotFoundException;
@@ -19,11 +21,14 @@ public class SpecialityAdminService {
 	private final SpecialityRepository specialities;
 	private final DoctorRepository doctors;
 	private final ReferenceDataCache cache;
+	private final AuditService audit;
 
-	public SpecialityAdminService(SpecialityRepository specialities, DoctorRepository doctors, ReferenceDataCache cache) {
+	public SpecialityAdminService(SpecialityRepository specialities, DoctorRepository doctors, ReferenceDataCache cache,
+			AuditService audit) {
 		this.specialities = specialities;
 		this.doctors = doctors;
 		this.cache = cache;
+		this.audit = audit;
 	}
 
 	@Transactional(readOnly = true)
@@ -37,6 +42,7 @@ public class SpecialityAdminService {
 		}
 		Speciality s = new Speciality(req.name(), req.description(), req.active());
 		specialities.save(s);
+		audit.record(AuditAction.SPECIALITY_CREATED, "SPECIALITY", s.getId(), s.getName());
 		cache.invalidate();
 		return AdminSpecialityDto.from(s);
 	}
@@ -51,6 +57,7 @@ public class SpecialityAdminService {
 					"Active doctors belong to this speciality. Move or deactivate them first.");
 		}
 		s.update(req.name(), req.description(), req.active());
+		audit.record(AuditAction.SPECIALITY_UPDATED, "SPECIALITY", id, s.getName() + ", active=" + req.active());
 		cache.invalidate();
 		return AdminSpecialityDto.from(s);
 	}

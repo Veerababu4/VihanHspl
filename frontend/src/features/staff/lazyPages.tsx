@@ -1,0 +1,26 @@
+import { lazy, Suspense } from 'react'
+import { Outlet } from 'react-router'
+
+// The staff portal is loaded only when someone opens /staff, so public visitors on mobile data
+// never download it (separate bundles).
+
+export const StaffRoot = lazy(() => import('./StaffLayout').then((m) => ({ default: m.StaffRoot })))
+export const StaffLayout = lazy(() => import('./StaffLayout').then((m) => ({ default: m.StaffLayout })))
+export const RequireRole = lazy(() => import('./StaffLayout').then((m) => ({ default: m.RequireRole })))
+export const LoginPage = lazy(() => import('./LoginPage').then((m) => ({ default: m.LoginPage })))
+export const DashboardPage = lazy(() => import('./StaffPages').then((m) => ({ default: m.DashboardPage })))
+export const ProfilePage = lazy(() => import('./StaffPages').then((m) => ({ default: m.ProfilePage })))
+export const UsersPage = lazy(() => import('./admin/UsersPage').then((m) => ({ default: m.UsersPage })))
+export const DoctorsAdminPage = lazy(() => import('./admin/DoctorsAdminPage').then((m) => ({ default: m.DoctorsAdminPage })))
+export const BranchesAdminPage = lazy(() => import('./admin/BranchesAdminPage').then((m) => ({ default: m.BranchesAdminPage })))
+export const GalleryAdminPage = lazy(() => import('./admin/GalleryAdminPage').then((m) => ({ default: m.GalleryAdminPage })))
+export const AuditPage = lazy(() => import('./admin/AuditPage').then((m) => ({ default: m.AuditPage })))
+
+/** Loading line while the first staff bundle downloads (before the session provider exists). */
+export function StaffSuspense() {
+  return (
+    <Suspense fallback={<p className="p-8 text-slate-500">Loading…</p>}>
+      <Outlet />
+    </Suspense>
+  )
+}

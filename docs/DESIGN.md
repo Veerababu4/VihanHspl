@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Version** | 0.5 — M2 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18) |
+| **Version** | 0.6 — M3 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2) |
 | **Date** | 2026-10-06 |
 | **Owner** | Veera |
-| **Status** | Signed off → M1 ✅ → **M2 public website complete (2026-10-06)** → M3 next |
+| **Status** | Signed off → M1 ✅ → M2 ✅ → **M3 auth & admin complete (2026-10-06)** → M4 next |
 
 > **How to review:** Read sections 1–6 for *what* we are building, 7–12 for *how*, and 13–16 for setup/deployment/plan.
 > **Section 19 explains how the 8 additional requirements found during the initial review are handled.**
@@ -246,10 +246,10 @@ UI: mobile-first, responsive, hospital brand colours (to be confirmed — §17),
 | UI | **Tailwind CSS** + a small component kit (shadcn/ui style) | Responsive, quick to style |
 | Frontend libs | React Router 7 (v8 needs Node ≥ 22.22), TanStack Query (API caching), React Hook Form + Zod (forms/validation), Recharts (dashboard chart). SEO tags use React 19's built-in `<title>`/`<meta>` support (no react-helmet-async needed) | |
 | Backend | **Java 21 LTS + Spring Boot 4.1.1** (Spring Security 7, Hibernate 7.4, Jackson 3) | Single REST API, Maven wrapper (`mvnw`) — no global Maven needed |
-| Backend libs | Spring Web, Spring Data JPA (Hibernate), Spring Security, Bean Validation, Flyway, jjwt, Bucket4j (rate limit), Thumbnailator (image resize) + TwelveMonkeys `imageio-webp` (Java can't decode WebP by itself), Apache POI or OpenCSV (export), springdoc-openapi (Swagger UI) | |
+| Backend libs | Spring Web, Spring Data JPA (Hibernate), Spring Security, Bean Validation, Flyway, Spring Security OAuth2 Resource Server (JWT via Nimbus; replaces the jjwt library first planned: same HS256 tokens, less custom security code), Bucket4j (rate limit), Thumbnailator (image resize) + TwelveMonkeys `imageio-webp` (Java can't decode WebP by itself), Apache POI or OpenCSV (export), springdoc-openapi (Swagger UI) | |
 | Database | **Oracle** — local: Oracle Database Free; cloud: **Oracle Autonomous Database (Always Free)** | JDBC driver `ojdbc17` |
 | Migrations | **Flyway 12** (`flyway-database-oracle`) | Same scripts for local & cloud |
-| Auth | Spring Security + JWT + BCrypt | |
+| Auth | Spring Security + JWT + BCrypt | The staff portal is a separate lazy-loaded bundle, so public visitors never download it |
 | Captcha | Cloudflare Turnstile | Free |
 | Image storage | Phase 1: server disk (`/uploads`) behind a `FileStorageService` interface; later: OCI Object Storage | DB stores only the file key (`doctors/<random>.jpg`); the URL is built as `PUBLIC_FILE_BASE_URL` + key when read, so moving hosts is an `.env` change |
 | Build/CI | GitHub + GitHub Actions (build + tests) | optional but recommended |
@@ -624,7 +624,7 @@ CREATE INDEX ix_audit_time ON audit_log (created_at);
   | Source | Data |
   |---|---|
   | SQL (`db/dev-data/R__dev_sample_data.sql`) ✅ M1 | 20 **fictional** doctors (`SAMPLE-001…020`, every speciality covered, 5 serving 2–3 branches), doctor↔branch mappings, 162 weekly sessions (10:00–14:00, some 17:00–19:00, 20-min slots, no cross-branch overlaps) |
-  | Java `LocalDataSeeder` (needs app crypto; each part is built in the milestone that adds its code: users M3, slots M4, appointments M5, patients M7, visits M8) | Staff users with BCrypt passwords (1 IT Admin, doctor logins, 1 receptionist per branch; password from `DEV_SAMPLE_PASSWORD`), ~40 fictional patients (Aadhaar encrypted with the env key, checksum-valid fictional numbers), slots via the real slot generator, appointments for yesterday/today/next 7 days in every status, ~60 past visits with vitals, diagnoses and prescriptions |
+  | Java `LocalDataSeeder` (needs app crypto; each part is built in the milestone that adds its code: users M3 ✅, slots M4, appointments M5, patients M7, visits M8) | Staff users with BCrypt passwords (1 IT Admin, doctor logins, 1 receptionist per branch; password from `DEV_SAMPLE_PASSWORD`), ~40 fictional patients (Aadhaar encrypted with the env key, checksum-valid fictional numbers), slots via the real slot generator, appointments for yesterday/today/next 7 days in every status, ~60 past visits with vitals, diagnoses and prescriptions |
   | Static files | Initials-based avatar images and placeholder hospital images — no real photos |
 - In the `local` profile the UI shows a **"SAMPLE DATA"** banner.
 
@@ -710,7 +710,7 @@ Base path `/api`. JSON. Errors use a single shape: `{ "timestamp", "status", "co
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/auth/login` | → access token (body) + refresh token (httpOnly cookie) |
-| POST | `/auth/refresh` | Rotate refresh token, new access token |
+| POST | `/auth/refresh` | Rotate refresh token, new access token (204 when there is no cookie) |
 | POST | `/auth/logout` | Revoke refresh token |
 | POST | `/auth/change-password` | Authenticated |
 | GET | `/auth/me` | Current user, role, doctorId, homeBranch |
@@ -789,7 +789,14 @@ Patient data (health records, Aadhaar) is **sensitive personal data** under Indi
 - Passwords: BCrypt (cost 12); min 8 chars with letters + digits.
 - **Access token:** JWT (HS256, 30 min), sent as `Authorization: Bearer`, held in memory on the frontend.
 - **Refresh token:** random 256-bit, stored **hashed** in DB, 8 h (one shift), rotated on use, `httpOnly; Secure; SameSite=Strict` cookie on `/api/auth`. Works because `/api` is proxied same-origin (§8).
-- Lockout: 5 failures → 15 min lock.
+- Lockout: 5 failures → 15 min lock (HTTP 423 `ACCOUNT_LOCKED`). IT Admin "reset password" also unlocks.
+- Unknown usernames take as long as wrong passwords (a dummy BCrypt check) and get the same message, so login can't be used to discover usernames. Inactive accounts get the same answer too.
+- **Temporary passwords** (new account / reset): 12 random characters without look-alikes (0/O, 1/l/I), shown to the IT Admin **once**, never stored in plain text. Until changed, the access token carries only a `PASSWORD_CHANGE_REQUIRED` authority: every role-protected API answers 403 `PASSWORD_CHANGE_REQUIRED`.
+- **Refresh token rotation & theft detection:** each use revokes the old token. Presenting an already-used token more than 30 s later revokes *all* the user's sessions (audit `REFRESH_TOKEN_REUSE`); within 30 s it is treated as two tabs refreshing at once. Refreshing never extends the 8 h session. `POST /auth/refresh` without a cookie answers 204 (nobody logged in), not an error.
+- Password change and deactivation end the user's other sessions; expired tokens are purged nightly.
+- After an explicit logout the next login starts at the dashboard (not the previous user's page); after an expired session the user returns to the page they were on.
+- First IT Admin: user `admin` created at startup from `BOOTSTRAP_ADMIN_PASSWORD` when no active IT Admin exists; must change the password at first login. Safeguards: nobody can deactivate or demote themselves, and the last active IT Admin can't be deactivated or demoted.
+- JPA auditing fills `created_by` / `updated_by` from the token. Audit log entries are written in the same transaction as the change (failed logins are committed on purpose); viewer at `/staff/admin/audit` with user / action / date filters, paginated.
 
 ### 12.3 Authorization
 - `@PreAuthorize` on every staff endpoint + ownership checks (doctor can only touch own schedule/appointments).
@@ -965,7 +972,7 @@ Each milestone ends with: working build, tests passing, demo on local, your revi
 | **M0** | Design sign-off | This document reviewed; §17 answered ✅ |
 | **M1** ✅ | Foundation | Repo + `.gitignore`, Spring Boot & React scaffolds, `.env` config, local Oracle connection, Flyway V1/V2, error handling, logging, README |
 | **M2** ✅ | Public website | Branches, specialities, doctors, doctor profile, gallery, about/contact, mobile emergency button, SEO; IT Admin **APIs** for doctors/branches/specialities/gallery + image upload (tested with mock users). *Admin screens moved to M3, since they need login.* |
-| **M3** | Auth & users | Login (with showcase panel), JWT + refresh, roles, lockout, change/reset password, user admin, audit log; **IT Admin screens** for doctors, branches, specialities, gallery (APIs from M2) |
+| **M3** ✅ | Auth & users | Login (with showcase panel), JWT + refresh, roles, lockout, change/reset password, user admin, audit log; **IT Admin screens** for doctors, branches, specialities, gallery (APIs from M2) |
 | **M4** | Scheduling | Schedule templates, slot generation job, manual slots, block, leave, holidays, overlap validation |
 | **M5** | Booking | Public booking wizard, captcha, rate limits, confirmation, lookup/cancel; counter/phone booking; concurrency tests |
 | **M6** | Reception & dashboard | Appointment list, status workflow, check-in + patient linking, dashboard (doctor/branch/network), export |
@@ -1093,4 +1100,4 @@ The original input had 10 points. The initial review found **8 further requireme
 
 ---
 
-*End of document — v0.5.*
+*End of document — v0.6.*

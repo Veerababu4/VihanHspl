@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.vihan.hospital.audit.AuditAction;
+import com.vihan.hospital.audit.AuditService;
 import com.vihan.hospital.branch.BranchDto;
 import com.vihan.hospital.branch.BranchRepository;
 import com.vihan.hospital.common.ReferenceDataCache;
@@ -33,14 +35,16 @@ public class GalleryService {
 	private final ReferenceDataCache cache;
 	private final ImageService images;
 	private final FileUrls fileUrls;
+	private final AuditService audit;
 
 	public GalleryService(GalleryImageRepository gallery, BranchRepository branches, ReferenceDataCache cache,
-			ImageService images, FileUrls fileUrls) {
+			ImageService images, FileUrls fileUrls, AuditService audit) {
 		this.gallery = gallery;
 		this.branches = branches;
 		this.cache = cache;
 		this.images = images;
 		this.fileUrls = fileUrls;
+		this.audit = audit;
 	}
 
 	/** @param branchCode null = all images; otherwise only that branch's images */
@@ -77,6 +81,7 @@ public class GalleryService {
 		GalleryImage g = new GalleryImage(stored.key(), stored.thumbKey());
 		apply(g, req);
 		gallery.save(g);
+		audit.record(AuditAction.GALLERY_IMAGE_ADDED, "GALLERY_IMAGE", g.getId(), g.getTitle());
 		return AdminGalleryImageDto.from(g, fileUrls);
 	}
 
@@ -84,6 +89,7 @@ public class GalleryService {
 		GalleryImage g = find(id);
 		checkBranch(req.branchId());
 		apply(g, req);
+		audit.record(AuditAction.GALLERY_IMAGE_UPDATED, "GALLERY_IMAGE", id, g.getTitle());
 		return AdminGalleryImageDto.from(g, fileUrls);
 	}
 
@@ -91,6 +97,7 @@ public class GalleryService {
 		GalleryImage g = find(id);
 		images.cleanupOnCompletion(List.of(g.getImageUrl(), g.getThumbUrl()), List.of());
 		gallery.delete(g);
+		audit.record(AuditAction.GALLERY_IMAGE_DELETED, "GALLERY_IMAGE", id, g.getTitle());
 	}
 
 	private void apply(GalleryImage g, GalleryImageRequest req) {

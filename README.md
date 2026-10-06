@@ -78,6 +78,20 @@ The website shows a yellow **SAMPLE DATA** banner while sample data is in use.
 | http://localhost:8080/swagger-ui | API docs (local profile only) |
 | http://localhost:8080/actuator/health | Health check (includes the DB) |
 
+## Staff portal logins (local)
+
+Open http://localhost:5173/staff/login.
+
+| Username | Role | Password |
+|---|---|---|
+| `admin` | IT Admin (created once from `BOOTSTRAP_ADMIN_PASSWORD`) | `BOOTSTRAP_ADMIN_PASSWORD` in `backend/.env`; must be changed at first login |
+| `itadmin` | IT Admin (sample) | `DEV_SAMPLE_PASSWORD` in `backend/.env` |
+| `reception.mlg`, `reception.hzn`, `reception.kdd` | Receptionist at that branch (sample) | `DEV_SAMPLE_PASSWORD` |
+| `doctor001` … `doctor020` | Doctor login for sample doctor SAMPLE-001 … 020 | `DEV_SAMPLE_PASSWORD` |
+
+Sample logins exist only in the `local` profile. Five wrong passwords lock an account for 15 minutes;
+an IT Admin can unlock it with "Reset password".
+
 ## Tests
 
 ```powershell
@@ -96,6 +110,9 @@ backend/
   src/main/java/com/vihan/hospital/
     config/      security, CORS, JPA auditing, OpenAPI, app properties
     common/      error handling (ApiError), request logging, masking, base entity, reference-data cache
+    security/    JWT config, access/refresh tokens, password rules, current-user helper
+    user/        login/refresh/logout/change-password, staff user admin, bootstrap admin, local sample logins
+    audit/       audit log (write + IT Admin viewer)
     branch/ speciality/ doctor/ gallery/   public API (/api/public/**) + IT Admin API (/api/admin/**)
     schedule/    weekly doctor schedules (read-only until M4)
     storage/     image upload checks, resizing, file storage, /files/** serving
@@ -106,7 +123,8 @@ backend/
 frontend/
   src/api/        typed API client + React Query hooks
   src/components/ layout and shared UI
-  src/features/   pages by area (public/, staff/ …)
+  src/features/   pages by area (public/, staff/ …); staff pages are lazy-loaded
+  src/auth/       staff session (access token in memory, refresh via httpOnly cookie)
   src/lib/        formatting and SEO (schema.org) helpers
   public/placeholders/  labelled placeholder images used by the local sample data
   src/locales/    UI text (en.json; Telugu in Phase 2)
