@@ -1,12 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
-/** Placeholder for pages built in later milestones (doctors M2, booking M5, staff portal M3). */
-export function ComingSoonPage() {
-  const { t } = useTranslation()
-  return <Message title={t('common.comingSoon')} />
-}
-
 export function NotFoundPage() {
   const { t } = useTranslation()
   return <Message title={t('notFound.title')} />

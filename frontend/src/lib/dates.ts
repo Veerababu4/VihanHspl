@@ -5,6 +5,13 @@ export function todayIso(): string {
   return toIso(new Date())
 }
 
+/** Local date-time "YYYY-MM-DDTHH:mm:ss", comparable with the backend's slot times. */
+export function nowLocalIso(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${toIso(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 export function toIso(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`

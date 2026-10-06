@@ -46,4 +46,18 @@ public class ApiException extends RuntimeException {
 		}
 	}
 
+	/** 429 — too many requests from one IP; the client should wait {@code retryAfterSeconds}. */
+	public static class TooManyRequestsException extends ApiException {
+		private final long retryAfterSeconds;
+
+		public TooManyRequestsException(long retryAfterSeconds) {
+			super(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", "Too many requests. Please wait a minute and try again.");
+			this.retryAfterSeconds = retryAfterSeconds;
+		}
+
+		public long getRetryAfterSeconds() {
+			return retryAfterSeconds;
+		}
+	}
+
 }

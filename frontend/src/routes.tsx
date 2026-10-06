@@ -2,16 +2,19 @@ import type { ReactNode } from 'react'
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 
 import { PublicLayout } from './components/PublicLayout'
-import { ComingSoonPage, NotFoundPage } from './components/SimplePages'
+import { NotFoundPage } from './components/SimplePages'
 import { BranchPage } from './features/public/BranchPage'
 import { DoctorProfilePage } from './features/public/DoctorProfilePage'
 import { DoctorsPage } from './features/public/DoctorsPage'
 import { GalleryPage } from './features/public/GalleryPage'
 import { HomePage } from './features/public/HomePage'
+import { AppointmentStatusPage, BookingPage, ConfirmationPage } from './features/public/booking/lazyBooking'
 import { AboutPage, ContactPage } from './features/public/InfoPages'
+import { PrivacyPage } from './features/public/PrivacyPage'
 import {
   AuditPage,
   BranchesAdminPage,
+  CounterBookingPage,
   DashboardPage,
   DoctorsAdminPage,
   GalleryAdminPage,
@@ -39,7 +42,10 @@ export const routes: RouteObject[] = [
       { path: 'gallery', element: <GalleryPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'contact', element: <ContactPage /> },
-      { path: 'book', element: <ComingSoonPage /> }, // M5
+      { path: 'book', element: <BookingPage /> },
+      { path: 'book/confirmation/:ref', element: <ConfirmationPage /> },
+      { path: 'appointment-status', element: <AppointmentStatusPage /> },
+      { path: 'privacy', element: <PrivacyPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
@@ -57,6 +63,7 @@ export const routes: RouteObject[] = [
               { index: true, element: <Navigate to="dashboard" replace /> },
               { path: 'dashboard', element: <DashboardPage /> },
               { path: 'profile', element: <ProfilePage /> },
+              { path: 'book', element: <RequireRole roles={['RECEPTIONIST', 'IT_ADMIN']}><CounterBookingPage /></RequireRole> },
               { path: 'schedule', element: <RequireRole roles={['DOCTOR', 'IT_ADMIN']}><SchedulePage /></RequireRole> },
               { path: 'admin/users', element: itAdmin(<UsersPage />) },
               { path: 'admin/doctors', element: itAdmin(<DoctorsAdminPage />) },

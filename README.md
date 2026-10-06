@@ -78,6 +78,15 @@ The website shows a yellow **SAMPLE DATA** banner while sample data is in use.
 | http://localhost:8080/swagger-ui | API docs (local profile only) |
 | http://localhost:8080/actuator/health | Health check (includes the DB) |
 
+## Booking (local)
+
+- Public booking: http://localhost:5173/book · check / cancel / reschedule: http://localhost:5173/appointment-status
+- The "I am human" check is Cloudflare Turnstile. Locally it uses Cloudflare's **test keys**, which always pass:
+  put `VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA` in `frontend/.env.local` (git-ignored) and keep
+  `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA` in `backend/.env`. Working offline? Set
+  `CAPTCHA_ENABLED=false` in `backend/.env` and leave the site key out.
+- SMS / WhatsApp are not sent yet: the backend log shows `[would send SMS] …` lines instead.
+
 ## Staff portal logins (local)
 
 Open http://localhost:5173/staff/login.
@@ -113,6 +122,9 @@ backend/
     security/    JWT config, access/refresh tokens, password rules, current-user helper
     user/        login/refresh/logout/change-password, staff user admin, bootstrap admin, local sample logins
     audit/       audit log (write + IT Admin viewer)
+    appointment/ booking, lookup, cancel, reschedule, counter booking, free-slot queries
+    captcha/     Cloudflare Turnstile verification
+    notification/  SMS / WhatsApp hook (log-only in Phase 1)
     branch/ speciality/ doctor/ gallery/   public API (/api/public/**) + IT Admin API (/api/admin/**)
     schedule/    weekly timetables, slot planner + reconciler, leave, holidays, nightly slot job
     storage/     image upload checks, resizing, file storage, /files/** serving

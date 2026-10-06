@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet, ScrollRestoration } from 'react-router'
 
@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { to: '/gallery', key: 'nav.gallery' },
   { to: '/about', key: 'nav.about' },
   { to: '/contact', key: 'nav.contact' },
+  { to: '/appointment-status', key: 'nav.myBooking' },
 ] as const
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -25,11 +26,11 @@ export function PublicLayout() {
     <div className="flex min-h-screen flex-col">
       <ScrollRestoration />
       {appInfo?.sampleData && (
-        <div role="status" className="bg-amber-400 px-4 py-1 text-center text-sm font-semibold text-amber-950">
+        <div role="status" className="bg-amber-400 px-4 py-1 text-center text-sm font-semibold text-amber-950 print:hidden">
           {t('banner.sampleData')}
         </div>
       )}
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" onClick={closeMenu} className="flex items-center gap-2" aria-label={t('brand.fullName')}>
             <img src="/favicon.svg" alt="" className="h-9 w-9" />
@@ -39,7 +40,7 @@ export function PublicLayout() {
             </span>
           </Link>
 
-          <nav aria-label="Main" className="hidden items-center gap-1 text-sm font-medium md:flex">
+          <nav aria-label="Main" className="hidden items-center gap-1 text-sm font-medium lg:flex">
             {NAV_LINKS.map((l) => (
               <NavLink key={l.to} to={l.to} className={navClass}>
                 {t(l.key)}
@@ -53,7 +54,7 @@ export function PublicLayout() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-2 lg:hidden">
             <Link to="/book" onClick={closeMenu} className="whitespace-nowrap rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white">
               {t('nav.bookShort')}
             </Link>
@@ -73,7 +74,7 @@ export function PublicLayout() {
         </div>
 
         {menuOpen && (
-          <nav id="mobile-menu" aria-label="Mobile" className="border-t border-slate-200 bg-white md:hidden">
+          <nav id="mobile-menu" aria-label="Mobile" className="border-t border-slate-200 bg-white lg:hidden">
             <ul className="mx-auto max-w-6xl px-2 py-2 font-medium">
               {NAV_LINKS.map((l) => (
                 <li key={l.to}>
@@ -93,7 +94,9 @@ export function PublicLayout() {
       </header>
 
       <main className="flex-1">
-        <Outlet />
+        <Suspense fallback={<p className="mx-auto max-w-6xl px-4 py-12 text-slate-500">{t('common.loading')}</p>}>
+          <Outlet />
+        </Suspense>
       </main>
 
       <Footer />
@@ -109,7 +112,7 @@ function Footer() {
   const { data: branches } = useBranches()
 
   return (
-    <footer className="bg-brand-900 pb-20 text-brand-100 md:pb-0">
+    <footer className="bg-brand-900 pb-20 text-brand-100 md:pb-0 print:hidden">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-3">
         <div className="md:col-span-2">
           <p className="mb-3 font-semibold text-white">🚑 {t('footer.emergency')}</p>

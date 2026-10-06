@@ -14,7 +14,8 @@
     "bookShort": "Book",
     "staffLogin": "Staff Login",
     "menu": "Menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "myBooking": "My booking"
   },
   "banner": {
     "sampleData": "SAMPLE DATA — all doctors and patients shown are fictional, for testing only."
@@ -27,7 +28,11 @@
     "galleryTitle": "Gallery",
     "aboutTitle": "About Us",
     "contactTitle": "Contact Us",
-    "titleSuffix": " | Vihan Multi Speciality Hospital"
+    "titleSuffix": " | Vihan Multi Speciality Hospital",
+    "bookTitle": "Book an appointment",
+    "bookDescription": "Book a doctor appointment online at Vihan Multi Speciality Hospital in Miryalaguda, Huzurnagar or Kodad.",
+    "statusTitle": "Check my booking",
+    "privacyTitle": "Privacy notice"
   },
   "home": {
     "heroTitle": "Care you can trust, close to home",
@@ -133,7 +138,6 @@
     "back": "Go to home page"
   },
   "common": {
-    "comingSoon": "Coming soon",
     "loading": "Loading…",
     "retry": "Try again"
   },
@@ -182,7 +186,8 @@
       "viewSite": "View website",
       "menu": "Menu",
       "admin": "Administration",
-      "schedule": "Schedule"
+      "schedule": "Schedule",
+      "newBooking": "New booking"
     },
     "roles": {
       "DOCTOR": "Doctor",
@@ -405,6 +410,148 @@
         "remove": "Remove",
         "removeConfirm": "Remove this holiday? Its slots will open again."
       }
+    },
+    "booking": {
+      "title": "New booking (counter / phone)",
+      "channel": "Booked via",
+      "channels": {
+        "COUNTER": "At the counter",
+        "PHONE": "By phone"
+      },
+      "consent": "The patient agreed to the privacy notice",
+      "done": "Booked",
+      "another": "Book another",
+      "allDays": "Next 14 days",
+      "mobileHint": "Full number; it is shown masked on the confirmation."
     }
+  },
+  "booking": {
+    "title": "Book an appointment",
+    "steps": {
+      "doctor": "Doctor",
+      "time": "Date & time",
+      "details": "Your details"
+    },
+    "branch": "Hospital",
+    "chooseBranch": "Choose a hospital",
+    "speciality": "Speciality (optional)",
+    "allSpecialities": "All specialities",
+    "doctor": "Doctor",
+    "noDoctors": "No doctors match. Try another speciality.",
+    "next": "Continue",
+    "back": "Back",
+    "change": "Change",
+    "date": "Date",
+    "freeCount_one": "{{count}} free",
+    "freeCount_other": "{{count}} free",
+    "none": "Full",
+    "time": "Time",
+    "tokenShort": "Token {{token}}",
+    "noSlots": "No free times on this day. Please pick another date.",
+    "noDays": "No free times in the next two weeks. Please call the hospital.",
+    "slotLabel": "{{time}}, token {{token}}",
+    "patientName": "Patient name",
+    "age": "Age (years)",
+    "gender": "Gender",
+    "genders": {
+      "M": "Male",
+      "F": "Female",
+      "O": "Other"
+    },
+    "mobile": "Mobile number",
+    "mobileHint": "We use this to find your booking. 10 digits.",
+    "reason": "Reason for visit (optional)",
+    "consent": "I agree to the hospital using these details to manage my appointment, as explained in the",
+    "privacyLink": "privacy notice",
+    "confirm": "Confirm booking",
+    "booking": "Booking…",
+    "captchaHint": "Please complete the check below.",
+    "captchaLoadFailed": "The \"I am human\" check could not load. Check your internet connection and reload the page.",
+    "summary": "Your selection",
+    "fee": "Consultation fee {{fee}}, paid at the hospital",
+    "slotGone": "Sorry, that time is no longer available. Please choose another time.",
+    "errors": {
+      "name": "Please enter the patient's name",
+      "age": "Enter an age between 0 and 120",
+      "gender": "Please choose",
+      "mobile": "Enter a 10-digit mobile number",
+      "consent": "Please accept to continue"
+    }
+  },
+  "confirmation": {
+    "title": "Booking confirmed",
+    "subtitle": "Please save or print this page.",
+    "ref": "Booking reference",
+    "token": "Token number",
+    "when": "Date & time",
+    "where": "Hospital",
+    "doctor": "Doctor",
+    "patient": "Patient",
+    "arrive": "Please arrive 15 minutes early and show this reference at the reception counter.",
+    "pay": "Consultation fee {{fee}} — pay at the hospital counter.",
+    "print": "Print",
+    "check": "Check or change my booking",
+    "home": "Back to home",
+    "missing": "Your booking {{ref}} is saved. To see its details, use \"Check my booking\" with your mobile number."
+  },
+  "status": {
+    "title": "Check my booking",
+    "intro": "Enter your booking reference and the mobile number used to book.",
+    "ref": "Booking reference",
+    "refPlaceholder": "VMH-261006-7K3Q",
+    "mobile": "Mobile number",
+    "find": "Find my booking",
+    "finding": "Searching…",
+    "another": "Check another booking",
+    "statusLabel": {
+      "BOOKED": "Booked",
+      "CHECKED_IN": "Checked in",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "NO_SHOW": "Missed"
+    },
+    "needsAction": "The doctor is not available at this time. The hospital will call you to arrange another time — or you can change it below.",
+    "deadline": "You can cancel or change this booking online until {{time}}.",
+    "tooLate": "Online changes are closed. Please call the hospital: {{phone}}.",
+    "cancel": "Cancel booking",
+    "cancelTitle": "Cancel this booking?",
+    "cancelReason": "Reason (optional)",
+    "confirmCancel": "Yes, cancel it",
+    "keep": "Keep booking",
+    "cancelled": "Your booking has been cancelled.",
+    "reschedule": "Change date or time",
+    "rescheduleTitle": "Choose a new time with {{doctor}}",
+    "reschedulesLeft_one": "You can change it {{count}} more time.",
+    "reschedulesLeft_other": "You can change it {{count}} more times.",
+    "confirmReschedule": "Move my booking",
+    "moved": "Your booking has been moved. Your reference stays the same; note the new token.",
+    "cancelReasonShown": "Reason: {{reason}}"
+  },
+  "privacy": {
+    "title": "Privacy notice",
+    "updated": "Draft — to be reviewed by the hospital before launch.",
+    "intro": "Vihan Multi Speciality Hospital collects only the details needed to give you care and manage your appointments.",
+    "sections": [
+      {
+        "h": "What we collect",
+        "p": "When you book: the patient's name, age, gender, mobile number and (optionally) the reason for the visit. At the hospital: details needed for registration and treatment. Aadhaar is optional and stored encrypted; it is never shown in full."
+      },
+      {
+        "h": "How we use it",
+        "p": "To confirm and manage appointments, to contact you about changes (for example if a doctor becomes unavailable), and to keep your medical record. We do not sell or share your details for marketing."
+      },
+      {
+        "h": "Who can see it",
+        "p": "Reception and IT staff see appointment and registration details. Only doctors can see clinical records. Every access to patient records is logged."
+      },
+      {
+        "h": "How long we keep it",
+        "p": "Appointment and medical records are kept as required for medical care and by law."
+      },
+      {
+        "h": "Your choices",
+        "p": "You can ask the hospital to correct your details. For questions, contact any of our hospitals."
+      }
+    ]
   }
 }

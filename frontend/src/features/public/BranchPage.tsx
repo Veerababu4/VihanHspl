@@ -106,7 +106,7 @@ export function BranchPage() {
             <h2 className="mb-6 text-2xl font-bold text-slate-900">{t('branch.doctorsHere')}</h2>
             <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {data.doctors.map((d) => (
-                <DoctorCard key={d.id} doctor={d} />
+                <DoctorCard key={d.id} doctor={d} branchCode={data.branch.code} />
               ))}
             </ul>
           </section>

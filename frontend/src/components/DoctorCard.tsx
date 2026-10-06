@@ -4,8 +4,11 @@ import { Link } from 'react-router'
 import type { DoctorSummary } from '../api/public'
 import { DoctorAvatar } from './DoctorAvatar'
 
-/** Doctor directory card (FR-P2): photo, name, speciality, qualification, experience, branches. */
-export function DoctorCard({ doctor }: { doctor: DoctorSummary }) {
+/**
+ * Doctor directory card (FR-P2): photo, name, speciality, qualification, experience, branches.
+ * @param branchCode on a branch page: pre-select that hospital when booking
+ */
+export function DoctorCard({ doctor, branchCode }: { doctor: DoctorSummary; branchCode?: string }) {
   const { t } = useTranslation()
   return (
     <li className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -34,7 +37,7 @@ export function DoctorCard({ doctor }: { doctor: DoctorSummary }) {
           {t('doctors.viewProfile')}
         </Link>
         <Link
-          to={`/book?doctor=${doctor.id}`}
+          to={`/book?doctor=${doctor.id}${branchCode ? `&branch=${branchCode}` : ''}`}
           className="flex-1 rounded-lg bg-brand-600 px-3 py-2 text-center text-white hover:bg-brand-700"
         >
           {t('doctors.book')}

@@ -17,6 +17,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +59,12 @@ class SchedulingIntegrationTest {
 		hzn = id("SELECT branch_id FROM branch WHERE code = 'HZN'");
 		wednesday = LocalDate.now().plusDays(1).with(TemporalAdjusters.next(DayOfWeek.WEDNESDAY));
 		doctorId = createDoctor();
+	}
+
+	/** Test doctors are deactivated afterwards so other test classes see only the sample doctors. */
+	@AfterEach
+	void deactivateTestDoctor() {
+		jdbc.update("UPDATE doctor SET is_active = 0 WHERE doctor_id = ?", doctorId);
 	}
 
 	// ---- helpers ----

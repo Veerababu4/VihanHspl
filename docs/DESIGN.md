@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Version** | 0.7 — M4 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2) |
+| **Version** | 0.8 — M5 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3) |
 | **Date** | 2026-10-06 |
 | **Owner** | Veera |
-| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → **M4 scheduling complete (2026-10-06)** → M5 next |
+| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → M4 ✅ → **M5 booking complete (2026-10-06)** → M6 next |
 
 > **How to review:** Read sections 1–6 for *what* we are building, 7–12 for *how*, and 13–16 for setup/deployment/plan.
 > **Section 19 explains how the 8 additional requirements found during the initial review are handled.**
@@ -671,6 +671,16 @@ Single transaction:
 
 Cancel → appointment `CANCELLED`, slot back to `OPEN` (if slot still in future).
 
+**As built (M5):**
+- Captcha is verified in the controller, *outside* the DB transaction, so a slow call to Cloudflare never holds a connection. If Cloudflare can't be reached the request is refused (`503 CAPTCHA_UNAVAILABLE`, fail closed).
+- Step 2 is `SlotRepository.bookIfOpen`; tested with 8 parallel bookings of one slot → exactly 1 succeeds, 7 get `409 SLOT_TAKEN`.
+- Online rules: slot must start ≥ 30 min from now (`app.booking.min-lead-minutes`) and lie in the 14-day window; doctor and branch active. Reception (counter / phone) may book any future open slot, with no window or per-mobile limit (they see the patient).
+- Per-mobile limit counts BOOKED + CHECKED_IN appointments of that mobile on that date, across all doctors. Mobile numbers are normalised to 10 digits first (`+91 98765 43210` = `09876543210` = `9876543210`). Two simultaneous requests could both pass the count (no row to lock); accepted, as rate limits bound it.
+- Cancel / reschedule release the old slot and then run the M4 reconciler for that day, so a slot freed on a leave / holiday day is re-blocked instead of reopened.
+- Lookup answers "No booking found with that reference and mobile number" for both an unknown reference and a wrong mobile (no hints for guessers).
+- Booking references are made from the booking day + 4 random characters; a clash with an existing reference is retried.
+- Notifications (`NotificationService`, log-only) are sent only after the transaction commits, with the mobile masked in the log.
+
 **Reschedule** (one transaction): lock new slot exactly as in step 2 → set old slot `OPEN` → update appointment's `slot_id`, `doctor_id`, `branch_id`, `appt_date`, `start_at`, `token_no`, `reschedule_count + 1`, clear `needs_action` → audit-log old/new slot. If the new slot is taken → `409`, and nothing changes.
 
 ### 10.4 Appointment state machine
@@ -715,6 +725,9 @@ Base path `/api`. JSON. Errors use a single shape: `{ "timestamp", "status", "co
 | POST | `/public/appointments/lookup` | `{bookingRef, mobile}` → status |
 | POST | `/public/appointments/cancel` | `{bookingRef, mobile, reason}` |
 | POST | `/public/appointments/reschedule` | `{bookingRef, mobile, newSlotId}` |
+| GET | `/public/doctors/{id}/slot-days?branch=` | *(M5)* each day of the window with its number of free slots (date picker) |
+
+As built: the open-slots endpoint is `GET /public/doctors/{id}/slots?branch=CODE&date=`; booking, cancel and reschedule bodies carry `captchaToken`; booking also needs `consent: true`. Counter / phone booking is `POST /staff/appointments` with `channel: COUNTER | PHONE` (walk-ins without a slot come with check-in in M6).
 | GET | `/files/**` | Serve uploaded images (cache headers) |
 
 ### 11.2 Auth
@@ -818,6 +831,9 @@ Patient data (health records, Aadhaar) is **sensitive personal data** under Indi
 
 ### 12.4 Other controls
 - Public booking: Turnstile captcha, Bucket4j rate limits (e.g. 10 req/min/IP on booking, 30 req/min/IP on lookups), 3 bookings/mobile/day.
+  *As built:* limits are applied by a `HandlerInterceptor` before the request body is read (so floods of invalid requests are throttled too): booking / cancel / reschedule 10, lookup 30, slot viewing 60, **staff login 20** per minute per IP; answer `429 RATE_LIMITED` with `Retry-After`. Buckets live in memory (single server) and idle ones are dropped every 5 minutes.
+  *Deployment (M10):* the limits use the client IP, so the reverse proxy must pass the real visitor IP (Caddy behind Vercel: trust only Vercel's forwarding header), otherwise everyone shares one IP or IPs can be spoofed. *Security headers (M9):* the CSP must allow `https://challenges.cloudflare.com` (script + frame) for Turnstile.
+  *Local development* uses Cloudflare's test keys (`1x…AA`), which accept any token; real keys are on the go-live checklist.
 - Input validation (Bean Validation + Zod on frontend). JPA parameter binding → no SQL injection.
 - File upload: max 5 MB, allow JPEG/PNG/WebP, verify magic bytes, re-encode/resize (strips EXIF), random file names.
 - HTTPS everywhere (Caddy / host-provided TLS). Security headers (CSP, HSTS, X-Content-Type-Options, frame-ancestors).
@@ -946,7 +962,7 @@ The design is host-agnostic, so moving is a redeploy, not a rewrite:
 - **Images:** copy the `uploads/` folder (or switch `FileStorageService` to object storage).
 - **Domain:** point DNS (`A` / `CNAME` records) at the new server. If the domain is bought early, the URL never changes for patients.
 
-**Go-live checklist:** real `.env` on VM with strong secrets · `SPRING_PROFILES_ACTIVE=cloud` · Swagger disabled · bootstrap admin password changed · HTTPS verified · backup job (Data Pump export / DB backups) scheduled and a restore tested · privacy policy page live.
+**Go-live checklist:** real `.env` on VM with strong secrets · real Turnstile keys (site key in the frontend build, secret in `.env`) and `TURNSTILE_HOSTNAME` set · `SPRING_PROFILES_ACTIVE=cloud` · Swagger disabled · bootstrap admin password changed · HTTPS verified · backup job (Data Pump export / DB backups) scheduled and a restore tested · privacy policy page live.
 
 ---
 
@@ -988,7 +1004,7 @@ Each milestone ends with: working build, tests passing, demo on local, your revi
 | **M2** ✅ | Public website | Branches, specialities, doctors, doctor profile, gallery, about/contact, mobile emergency button, SEO; IT Admin **APIs** for doctors/branches/specialities/gallery + image upload (tested with mock users). *Admin screens moved to M3, since they need login.* |
 | **M3** ✅ | Auth & users | Login (with showcase panel), JWT + refresh, roles, lockout, change/reset password, user admin, audit log; **IT Admin screens** for doctors, branches, specialities, gallery (APIs from M2) |
 | **M4** ✅ | Scheduling | Schedule templates, slot generation job, manual slots, block, leave, holidays, overlap validation |
-| **M5** | Booking | Public booking wizard, captcha, rate limits, confirmation, lookup/cancel; counter/phone booking; concurrency tests |
+| **M5** ✅ | Booking | Public booking wizard, captcha, rate limits, confirmation, lookup/cancel; counter/phone booking; concurrency tests |
 | **M6** | Reception & dashboard | Appointment list, status workflow, check-in + patient linking, dashboard (doctor/branch/network), export |
 | **M7** | Patients | Registration (Aadhaar encryption, duplicates), search, profile, visit list |
 | **M8** | Clinical | Doctor queue, visit entry, prescriptions, medical profile, history, print prescription |
@@ -1031,7 +1047,7 @@ The original input had 10 points. The initial review found **8 further requireme
 **Handled by (layered):**
 1. **Cloudflare Turnstile captcha** verified server-side on booking, cancel and reschedule.
 2. **Per-IP rate limits** (Bucket4j): booking 10/min, lookup 30/min.
-3. **Per-mobile limit:** max 3 active bookings per mobile per date; max 2 reschedules per booking.
+3. **Per-mobile limit:** max 3 active bookings per mobile per date; max 2 reschedules per booking. *(Online only; reception is exempt.)*
 4. **Indian mobile validation:** 10 digits, starts with 6–9.
 5. **No-show tracking:** mobiles with ≥ 3 no-shows in 30 days are flagged to the receptionist (not blocked automatically).
 6. **Phase 2:** SMS OTP verification can be switched on via a config flag (`BOOKING_OTP_ENABLED`) without changing the booking flow.
@@ -1060,7 +1076,7 @@ The original input had 10 points. The initial review found **8 further requireme
 
 **Handled by:**
 - Public booking stores what the patient typed (name, age, gender, mobile); `patient_id` stays empty until check-in.
-- **Optional UHID field** in the booking form for returning patients. It is pre-linked only if the UHID's mobile matches the entered mobile.
+- **Optional UHID field** in the booking form for returning patients. It is pre-linked only if the UHID's mobile matches the entered mobile. *(Moved to M7, when patient records exist.)*
 - **At check-in** the receptionist sees **suggested matches** (same mobile; similar name; same age ± 2), then either picks one or clicks **"Register new"** with the form pre-filled from the booking (FR-R4).
 - **Duplicate prevention** on registration: same Aadhaar → blocked; same mobile + similar name → warning (FR-PT2).
 - **Walk-ins** without a booking: register or find the patient first, then create the visit (`WALK_IN`).
@@ -1114,4 +1130,4 @@ The original input had 10 points. The initial review found **8 further requireme
 
 ---
 
-*End of document — v0.7.*
+*End of document — v0.8.*

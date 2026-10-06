@@ -78,3 +78,17 @@ app:
     window-days: 14                   # rolling booking window (DESIGN.md §17 #5)
     max-generate-days: 60             # "Generate" button may go this far ahead
     generate-on-startup: true         # catch up if the server was down at the nightly run
+  booking:
+    min-lead-minutes: 30              # public can't book a slot starting sooner (they should arrive 15 min early)
+    cancel-cutoff-minutes: 60         # patient cancel / reschedule closes 1 h before the slot (§17 #7)
+    max-reschedules: 2                # per booking, by the patient (FR-B3a)
+    max-per-mobile-per-day: 3         # active online bookings per mobile per date (§17 #6)
+  captcha:
+    enabled: ${CAPTCHA_ENABLED:true}  # false only for offline development
+    secret-key: ${TURNSTILE_SECRET_KEY:}
+    expected-hostname: ${TURNSTILE_HOSTNAME:}   # blank = don't check (test keys report example.com)
+  rate-limit:
+    booking-per-minute: 10            # per IP: book / cancel / reschedule (§12.4)
+    lookup-per-minute: 30             # per IP: check booking
+    slots-per-minute: 60              # per IP: viewing free slots
+    login-per-minute: 20              # per IP: staff login attempts (accounts also lock after 5 failures)

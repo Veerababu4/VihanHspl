@@ -15,7 +15,7 @@ export function EmergencyButton() {
   if (withPhone.length === 0) return null
 
   return (
-    <div className="fixed right-4 bottom-4 z-20 flex flex-col items-end gap-2 md:hidden">
+    <div className="fixed right-4 bottom-4 z-20 flex flex-col items-end gap-2 md:hidden print:hidden">
       {open && (
         <ul
           id="emergency-numbers"

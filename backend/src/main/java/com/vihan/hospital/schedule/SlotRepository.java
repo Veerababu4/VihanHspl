@@ -62,4 +62,31 @@ public interface SlotRepository extends JpaRepository<Slot, Long> {
 			where s.id = :id and s.status = com.vihan.hospital.schedule.Slot.Status.OPEN""")
 	int retokenIfOpen(@Param("id") Long id, @Param("token") int token);
 
+	/**
+	 * Takes a slot for a booking (DESIGN.md §10.3). Oracle locks the row, so of two simultaneous
+	 * bookings exactly one sees status OPEN and gets 1; the other gets 0 = "slot just taken".
+	 */
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("""
+			update Slot s set s.status = com.vihan.hospital.schedule.Slot.Status.BOOKED, s.version = s.version + 1
+			where s.id = :id and s.status = com.vihan.hospital.schedule.Slot.Status.OPEN""")
+	int bookIfOpen(@Param("id") Long id);
+
+	/** Frees a slot after a cancellation or reschedule. */
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("""
+			update Slot s set s.status = com.vihan.hospital.schedule.Slot.Status.OPEN, s.version = s.version + 1
+			where s.id = :id and s.status = com.vihan.hospital.schedule.Slot.Status.BOOKED""")
+	int releaseIfBooked(@Param("id") Long id);
+
+	/** Open slots of a doctor at a branch starting after {@code after}, up to and including {@code toDate}. */
+	@Query("""
+			select s from Slot s
+			where s.doctorId = :doctorId and s.branchId = :branchId
+			  and s.status = com.vihan.hospital.schedule.Slot.Status.OPEN
+			  and s.startAt > :after and s.slotDate <= :toDate
+			order by s.startAt""")
+	List<Slot> findOpen(@Param("doctorId") Long doctorId, @Param("branchId") Long branchId,
+			@Param("after") LocalDateTime after, @Param("toDate") LocalDate toDate);
+
 }

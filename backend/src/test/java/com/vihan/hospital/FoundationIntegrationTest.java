@@ -28,7 +28,7 @@ class FoundationIntegrationTest {
 	void migrationsCreateReferenceAndSampleData() {
 		assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM branch", Integer.class)).isEqualTo(3);
 		assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM speciality", Integer.class)).isEqualTo(18);
-		assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM doctor", Integer.class)).isEqualTo(20);
+		assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM doctor WHERE registration_no LIKE 'SAMPLE-%'", Integer.class)).isEqualTo(20);
 		assertThat(jdbc.queryForObject(
 				"SELECT COUNT(*) FROM speciality s WHERE NOT EXISTS (SELECT 1 FROM doctor d WHERE d.speciality_id = s.speciality_id)",
 				Integer.class)).as("every speciality has a sample doctor").isZero();

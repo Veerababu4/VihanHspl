@@ -37,6 +37,7 @@ interface NavItem {
 // Later milestones add appointments, patients, queue and schedule here (DESIGN.md §6).
 const NAV: NavItem[] = [
   { to: '/staff/dashboard', key: 'staff.nav.dashboard', roles: ['DOCTOR', 'RECEPTIONIST', 'IT_ADMIN'] },
+  { to: '/staff/book', key: 'staff.nav.newBooking', roles: ['RECEPTIONIST', 'IT_ADMIN'] },
   { to: '/staff/schedule', key: 'staff.nav.schedule', roles: ['DOCTOR', 'IT_ADMIN'] },
   { to: '/staff/admin/users', key: 'staff.nav.users', roles: ['IT_ADMIN'] },
   { to: '/staff/admin/doctors', key: 'staff.nav.doctors', roles: ['IT_ADMIN'] },
@@ -99,7 +100,7 @@ export function StaffLayout() {
 
   return (
     <div className="min-h-screen bg-slate-50 md:flex">
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white p-4 md:flex">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white p-4 md:flex print:hidden">
         <Brand />
         <nav aria-label={t('staff.nav.menu')} className="mt-6 flex-1">
           {nav}
@@ -107,7 +108,7 @@ export function StaffLayout() {
         <UserBox name={user.fullName} role={user.role} onLogout={onLogout} />
       </aside>
 
-      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden print:hidden">
         <Brand />
         <button
           type="button"
@@ -125,7 +126,7 @@ export function StaffLayout() {
         </div>
       )}
 
-      <main className="flex-1 px-4 py-6 md:px-8">
+      <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
         <Suspense fallback={<Loading />}>
           <Outlet />
         </Suspense>

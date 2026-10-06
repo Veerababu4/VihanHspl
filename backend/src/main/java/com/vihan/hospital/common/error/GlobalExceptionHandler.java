@@ -5,6 +5,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -32,7 +33,13 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(ApiException.class)
 	ResponseEntity<ApiError> handleApi(ApiException ex) {
-		return respond(ex.getStatus(), ex.getCode(), ex.getMessage());
+		ResponseEntity<ApiError> response = respond(ex.getStatus(), ex.getCode(), ex.getMessage());
+		if (ex instanceof ApiException.TooManyRequestsException tooMany) {
+			return ResponseEntity.status(response.getStatusCode())
+				.header(HttpHeaders.RETRY_AFTER, String.valueOf(tooMany.getRetryAfterSeconds()))
+				.body(response.getBody());
+		}
+		return response;
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

@@ -15,6 +15,7 @@ export const DoctorsAdminPage = lazy(() => import('./admin/DoctorsAdminPage').th
 export const BranchesAdminPage = lazy(() => import('./admin/BranchesAdminPage').then((m) => ({ default: m.BranchesAdminPage })))
 export const GalleryAdminPage = lazy(() => import('./admin/GalleryAdminPage').then((m) => ({ default: m.GalleryAdminPage })))
 export const SchedulePage = lazy(() => import('./schedule/SchedulePage').then((m) => ({ default: m.SchedulePage })))
+export const CounterBookingPage = lazy(() => import('./booking/CounterBookingPage').then((m) => ({ default: m.CounterBookingPage })))
 export const AuditPage = lazy(() => import('./admin/AuditPage').then((m) => ({ default: m.AuditPage })))
 
 /** Loading line while the first staff bundle downloads (before the session provider exists). */

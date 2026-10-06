@@ -13,10 +13,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param publicFileBaseUrl  URL prefix the browser uses for uploaded files, e.g. {@code /files}
  * @param auth               staff login settings (DESIGN.md §12.2)
  * @param scheduling         slot generation settings (DESIGN.md §10.2)
+ * @param booking            public booking rules (DESIGN.md §5.2, §17)
+ * @param captcha            Cloudflare Turnstile verification (DESIGN.md §19.2)
+ * @param rateLimit          per-IP request limits on public booking endpoints (DESIGN.md §12.4)
  */
 @ConfigurationProperties("app")
 public record AppProperties(boolean sampleData, List<String> corsAllowedOrigins, String uploadDir,
-		String publicFileBaseUrl, Auth auth, Scheduling scheduling) {
+		String publicFileBaseUrl, Auth auth, Scheduling scheduling,
+		Booking booking, Captcha captcha, RateLimit rateLimit) {
 
 	/**
 	 * @param jwtSecret              HMAC key for access tokens; at least 32 characters
@@ -33,6 +37,16 @@ public record AppProperties(boolean sampleData, List<String> corsAllowedOrigins,
 	 * @param generateOnStartup reconcile all doctors when the app starts
 	 */
 	public record Scheduling(int windowDays, int maxGenerateDays, boolean generateOnStartup) {
+	}
+
+	public record Booking(int minLeadMinutes, int cancelCutoffMinutes, int maxReschedules, int maxPerMobilePerDay) {
+	}
+
+	/** @param expectedHostname if set, the captcha must have been solved on this host */
+	public record Captcha(boolean enabled, String secretKey, String expectedHostname) {
+	}
+
+	public record RateLimit(int bookingPerMinute, int lookupPerMinute, int slotsPerMinute, int loginPerMinute) {
 	}
 
 }
