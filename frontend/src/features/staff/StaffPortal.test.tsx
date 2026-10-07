@@ -68,13 +68,13 @@ describe('Staff login', () => {
     await screen.findByRole('heading', { name: 'Staff login' })
     fillLogin('reception.mlg', 'secret-123')
 
-    expect(await screen.findByRole('heading', { name: 'Welcome, Asha Receptionist' })).toBeInTheDocument()
+    expect(await screen.findByText('Welcome, Asha Receptionist')).toBeInTheDocument()
   })
 
   it('restores the session from the refresh cookie after a page reload', async () => {
     mockApi({ ...publicApi, 'POST /auth/refresh': session(admin) })
     renderRoutes(routes, '/staff/dashboard')
-    expect(await screen.findByRole('heading', { name: 'Welcome, Sample IT Admin' })).toBeInTheDocument()
+    expect(await screen.findByText('Welcome, Sample IT Admin')).toBeInTheDocument()
   })
 })
 
@@ -98,7 +98,7 @@ describe('Temporary password', () => {
     fireEvent.change(screen.getByLabelText('Confirm new password'), { target: { value: 'MyNewPass9' } })
     fireEvent.click(screen.getByRole('button', { name: 'Change password' }))
 
-    expect(await screen.findByRole('heading', { name: 'Welcome, Asha Receptionist' })).toBeInTheDocument()
+    expect(await screen.findByText('Welcome, Asha Receptionist')).toBeInTheDocument()
     expect(requestBody(spy, '/auth/change-password')).toEqual({ currentPassword: 'Temp1234abcd', newPassword: 'MyNewPass9' })
   })
 })

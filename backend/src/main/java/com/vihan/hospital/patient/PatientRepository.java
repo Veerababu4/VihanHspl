@@ -1,0 +1,23 @@
+package com.vihan.hospital.patient;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface PatientRepository extends JpaRepository<Patient, Long> {
+
+	@Query(value = "SELECT seq_uhid.NEXTVAL FROM dual", nativeQuery = true)
+	long nextUhidNumber();
+
+	/** Check-in suggestions (DESIGN.md §19.5): same mobile, or the same name (any mobile). */
+	@Query("""
+			select p from Patient p
+			where p.active = true and (p.mobile = :mobile or upper(p.fullName) = upper(:name))
+			order by case when p.mobile = :mobile then 0 else 1 end, p.fullName""")
+	List<Patient> findCandidates(@Param("mobile") String mobile, @Param("name") String name);
+
+	List<Patient> findTop20ByActiveTrueAndMobileOrderByFullName(String mobile);
+
+}

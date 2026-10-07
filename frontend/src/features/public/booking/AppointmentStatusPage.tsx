@@ -85,7 +85,7 @@ export function AppointmentStatusPage() {
 
           {appointment.status === 'BOOKED' && (
             <p className="text-sm text-slate-600">
-              {appointment.canCancel
+              {appointment.canCancel && appointment.changeDeadline
                 ? t('status.deadline', { time: `${shortDate(appointment.changeDeadline.slice(0, 10))}, ${formatTime(timeOf(appointment.changeDeadline))}` })
                 : t('status.tooLate', { phone: appointment.branch.phone ?? '' })}
             </p>

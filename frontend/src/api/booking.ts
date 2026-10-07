@@ -23,7 +23,9 @@ export interface AppointmentView {
   bookingRef: string
   status: AppointmentStatus
   tokenNo: number | null
-  startAt: string
+  date: string
+  /** null for a walk-in (no time slot) */
+  startAt: string | null
   endAt: string | null
   doctor: { id: number; fullName: string; speciality: string; consultationFee: number | null }
   branch: { code: string; name: string; city: string; address: string; phone: string | null }
@@ -37,7 +39,7 @@ export interface AppointmentView {
   reschedulesLeft: number
   canCancel: boolean
   canReschedule: boolean
-  changeDeadline: string
+  changeDeadline: string | null
   needsAction: boolean
   cancelReason: string | null
 }

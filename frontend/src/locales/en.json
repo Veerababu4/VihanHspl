@@ -157,7 +157,11 @@
       "none": "—",
       "yes": "Yes",
       "no": "No",
-      "optional": "optional"
+      "optional": "optional",
+      "export": "Export",
+      "print": "Print",
+      "all": "All",
+      "apply": "Show"
     },
     "login": {
       "title": "Staff login",
@@ -187,7 +191,9 @@
       "menu": "Menu",
       "admin": "Administration",
       "schedule": "Schedule",
-      "newBooking": "New booking"
+      "newBooking": "New booking",
+      "appointments": "Appointments",
+      "reports": "Reports"
     },
     "roles": {
       "DOCTOR": "Doctor",
@@ -197,8 +203,24 @@
     "dashboard": {
       "title": "Dashboard",
       "welcome": "Welcome, {{name}}",
-      "role": "Signed in as {{role}}",
-      "comingSoon": "Appointment counts per doctor, branch and network arrive with milestone M6. Scheduling (M4) and booking (M5) come first."
+      "date": "Date",
+      "branch": "Hospital",
+      "allBranches": "All hospitals",
+      "network": "All hospitals",
+      "own": "Your appointments",
+      "total": "Total",
+      "booked": "Booked",
+      "checkedIn": "Checked in",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "noShow": "No-show",
+      "openSlots": "Free slots",
+      "doctor": "Doctor",
+      "perDoctor": "Per doctor",
+      "noData": "No appointments or free slots on this day.",
+      "exportCsv": "Export CSV",
+      "exportXlsx": "Export Excel",
+      "cardSummary": "{{total}} appointments · {{open}} free slots"
     },
     "password": {
       "title": "Change password",
@@ -423,6 +445,144 @@
       "another": "Book another",
       "allDays": "Next 14 days",
       "mobileHint": "Full number; it is shown masked on the confirmation."
+    },
+    "channels": {
+      "ONLINE": "Online",
+      "COUNTER": "Counter",
+      "PHONE": "Phone",
+      "WALK_IN": "Walk-in"
+    },
+    "appointments": {
+      "title": "Appointments",
+      "date": "Date",
+      "branch": "Hospital",
+      "allBranches": "All hospitals",
+      "doctor": "Doctor",
+      "allDoctors": "All doctors",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "search": "Search",
+      "searchHint": "Name, mobile or booking reference",
+      "walkIn": "Walk-in",
+      "newBooking": "New booking",
+      "empty": "No appointments match.",
+      "count_one": "{{count}} appointment",
+      "count_other": "{{count}} appointments",
+      "token": "Token",
+      "time": "Time",
+      "patient": "Patient",
+      "mobile": "Mobile",
+      "actions": "Actions",
+      "walkInTime": "Walk-in",
+      "frequentNoShow": "Missed 3+ visits in 30 days",
+      "needsAction": "Call patient",
+      "linked": "UHID {{uhid}}",
+      "reasonShown": "Reason: {{reason}}",
+      "checkIn": "Check in",
+      "noShow": "No-show",
+      "cancel": "Cancel",
+      "complete": "Complete",
+      "reschedule": "Reschedule",
+      "confirmNoShow": "Mark {{name}} as not arrived?",
+      "confirmComplete": "Mark the visit of {{name}} as completed?",
+      "done": {
+        "CHECKED_IN": "{{name}} checked in (token {{token}}).",
+        "NO_SHOW": "{{name}} marked as no-show.",
+        "CANCELLED": "Booking of {{name}} cancelled.",
+        "COMPLETED": "Visit of {{name}} completed.",
+        "moved": "Booking of {{name}} moved to {{when}}.",
+        "walkIn": "{{name}} added as walk-in, token {{token}}."
+      },
+      "needsActionTitle": "Patients to call ({{count}})",
+      "needsActionIntro": "The doctor is not available for these bookings (leave, holiday or a removed session). Call each patient, then reschedule or cancel.",
+      "cancelTitle": "Cancel booking",
+      "cancelReason": "Reason",
+      "cancelReasonRequired": "Please give a reason",
+      "confirmCancel": "Cancel booking",
+      "keep": "Keep",
+      "rescheduleTitle": "Move booking of {{name}}",
+      "rescheduleReason": "Reason",
+      "rescheduleHint": "Any doctor, any free time. This does not use up the patient’s own online changes.",
+      "confirmReschedule": "Move booking",
+      "pickSlot": "Choose a new time"
+    },
+    "checkIn": {
+      "title": "Check in {{name}}",
+      "booking": "Booked as: {{name}}, {{age}} y, {{gender}}, {{mobile}}",
+      "matches": "Registered patients that may be the same person",
+      "noMatches": "No registered patient with this mobile or name.",
+      "why": {
+        "sameMobile": "same mobile",
+        "sameName": "same name",
+        "ageClose": "similar age"
+      },
+      "pick": "Check in as this patient",
+      "registerNew": "Register as a new patient",
+      "checkingIn": "Checking in…"
+    },
+    "patient": {
+      "title": "New patient",
+      "fullName": "Full name",
+      "ageOrDob": "Age or date of birth",
+      "age": "Age (years)",
+      "dob": "Date of birth",
+      "gender": "Gender",
+      "mobile": "Mobile number",
+      "branch": "Registered at",
+      "consent": "The patient agreed to the privacy notice",
+      "register": "Register",
+      "registering": "Registering…",
+      "registered": "Registered with UHID {{uhid}}",
+      "errors": {
+        "ageOrDob": "Enter the age or the date of birth",
+        "name": "Please enter the patient's name",
+        "mobile": "Enter a 10-digit mobile number",
+        "consent": "The patient must agree to continue",
+        "gender": "Please choose",
+        "branch": "Please choose"
+      }
+    },
+    "walkIn": {
+      "title": "Walk-in patient",
+      "findByMobile": "Patient mobile number",
+      "find": "Find",
+      "found": "Registered patients with this mobile",
+      "notFound": "No registered patient with this mobile. Register them below.",
+      "choose": "Choose",
+      "chosen": "Patient: {{name}} ({{uhid}})",
+      "changePatient": "Change patient",
+      "branch": "Hospital",
+      "doctor": "Doctor",
+      "reason": "Reason for visit (optional)",
+      "add": "Add to doctor’s queue",
+      "adding": "Adding…"
+    },
+    "reports": {
+      "title": "Reports",
+      "type": "Report",
+      "types": {
+        "daily-register": "Daily appointment register",
+        "doctor-summary": "Doctor-wise summary",
+        "branch-summary": "Branch-wise summary",
+        "registrations": "Patient registrations",
+        "channels": "Online vs counter",
+        "no-show-cancel": "No-show and cancellation"
+      },
+      "from": "From",
+      "to": "To",
+      "branch": "Hospital",
+      "allBranches": "All hospitals",
+      "period": "Group by",
+      "periods": {
+        "day": "Day",
+        "month": "Month"
+      },
+      "show": "Show report",
+      "empty": "No data for this range.",
+      "rows_one": "{{count}} row",
+      "rows_other": "{{count}} rows",
+      "mobileMasked": "Mobile numbers are masked in this report.",
+      "last30": "Last 30 days"
     }
   },
   "booking": {
@@ -492,7 +652,8 @@
     "print": "Print",
     "check": "Check or change my booking",
     "home": "Back to home",
-    "missing": "Your booking {{ref}} is saved. To see its details, use \"Check my booking\" with your mobile number."
+    "missing": "Your booking {{ref}} is saved. To see its details, use \"Check my booking\" with your mobile number.",
+    "walkIn": "walk-in"
   },
   "status": {
     "title": "Check my booking",

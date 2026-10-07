@@ -79,7 +79,7 @@ public final class AppointmentDtos {
 	 * @param changeDeadline last moment the patient may cancel / reschedule online
 	 * @param needsAction    the doctor became unavailable; the hospital will call
 	 */
-	public record AppointmentView(String bookingRef, Appointment.Status status, Integer tokenNo, LocalDateTime startAt,
+	public record AppointmentView(String bookingRef, Appointment.Status status, Integer tokenNo, LocalDate date, LocalDateTime startAt,
 			LocalDateTime endAt, DoctorInfo doctor, BranchInfo branch, String patientName, Integer patientAge,
 			String patientGender, String mobileMasked, String reason, Appointment.Channel channel, int rescheduleCount,
 			int reschedulesLeft, boolean canCancel, boolean canReschedule, LocalDateTime changeDeadline,

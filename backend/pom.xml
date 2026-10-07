@@ -20,6 +20,7 @@
 		<thumbnailator.version>0.4.21</thumbnailator.version>
 		<twelvemonkeys.version>3.15.2</twelvemonkeys.version>
 		<bucket4j.version>8.21.0</bucket4j.version>
+		<fastexcel.version>0.20.2</fastexcel.version>
 	</properties>
 
 	<dependencies>
@@ -67,6 +68,12 @@
 			<groupId>com.bucket4j</groupId>
 			<artifactId>bucket4j_jdk17-core</artifactId>
 			<version>${bucket4j.version}</version>
+		</dependency>
+		<!-- Excel (.xlsx) export of dashboard and reports (DESIGN.md FR-D5, FR-D6); ~120 KB vs Apache POI ~10 MB -->
+		<dependency>
+			<groupId>org.dhatim</groupId>
+			<artifactId>fastexcel</artifactId>
+			<version>${fastexcel.version}</version>
 		</dependency>
 		<!-- Image upload: resize / re-encode (strips EXIF); WebP decoding for ImageIO -->
 		<dependency>

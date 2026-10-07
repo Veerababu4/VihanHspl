@@ -160,6 +160,52 @@ public class BookingService {
 		return view;
 	}
 
+	// ---- reception (FR-R2, FR-R6) ----
+
+	/** Staff cancel: any time before check-in, with a reason. */
+	@Transactional
+	public void cancelByStaff(Long appointmentId, String reason) {
+		Appointment a = bookedAppointment(appointmentId);
+		a.cancel(reason.strip(), CancelledBy.STAFF);
+		Slot slot = a.getSlotId() == null ? null : slots.findById(a.getSlotId()).orElse(null);
+		releaseSlot(a.getSlotId(), a.getDoctorId(), a.getApptDate());
+		audit.record(AuditAction.APPOINTMENT_CANCELLED, "APPOINTMENT", a.getId(), "by staff: " + reason.strip());
+		notifications.afterCommit(message(Event.CANCELLED, a, view(a, slot)));
+	}
+
+	/** Staff reschedule: any open future slot of any doctor; no cutoff and no count limit. */
+	@Transactional
+	public void rescheduleByStaff(Long appointmentId, Long newSlotId, String reason) {
+		Appointment a = bookedAppointment(appointmentId);
+		if (newSlotId.equals(a.getSlotId())) {
+			throw new BadRequestException("SAME_SLOT", "Please choose a different time");
+		}
+		Slot newSlot = bookableSlot(newSlotId, false);
+		Long oldSlotId = a.getSlotId();
+		Long oldDoctorId = a.getDoctorId();
+		LocalDate oldDate = a.getApptDate();
+		LocalDateTime oldStart = a.getStartAt();
+		if (slots.bookIfOpen(newSlot.getId()) == 0) {
+			throw slotTaken();
+		}
+		Appointment moved = appointments.findById(a.getId()).orElseThrow();   // re-read: see class comment
+		moved.moveByStaff(newSlot);
+		releaseSlot(oldSlotId, oldDoctorId, oldDate);
+		String doctorChange = oldDoctorId.equals(newSlot.getDoctorId()) ? "" : " (doctor " + oldDoctorId + " -> " + newSlot.getDoctorId() + ")";
+		audit.record(AuditAction.APPOINTMENT_RESCHEDULED, "APPOINTMENT", moved.getId(),
+				"by staff from " + oldStart + " to " + newSlot.getStartAt() + doctorChange + ": " + reason.strip());
+		notifications.afterCommit(message(Event.RESCHEDULED, moved, view(moved, newSlot)));
+	}
+
+	private Appointment bookedAppointment(Long id) {
+		Appointment a = appointments.findById(id).orElseThrow(() -> new NotFoundException("Appointment", id));
+		if (a.getStatus() != Appointment.Status.BOOKED) {
+			throw new ConflictException("INVALID_TRANSITION",
+					"This booking is " + a.getStatus().name().toLowerCase(Locale.ROOT).replace('_', ' ') + " and can't be changed");
+		}
+		return a;
+	}
+
 	// ---- rules ----
 
 	private Slot bookableSlot(Long slotId, boolean onlineRules) {
@@ -221,7 +267,8 @@ public class BookingService {
 			.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "BOOKING_NOT_FOUND", NOT_FOUND_MESSAGE));
 	}
 
-	private String newBookingRef(LocalDate day) {
+	/** Also used for walk-ins (ReceptionService). */
+	String newBookingRef(LocalDate day) {
 		for (int i = 0; i < REF_ATTEMPTS; i++) {
 			String ref = BookingRefs.generate(day);
 			if (!appointments.existsByBookingRef(ref)) {
@@ -248,10 +295,11 @@ public class BookingService {
 	private AppointmentView view(Appointment a, Slot slot) {
 		Doctor d = doctors.findWithDetailsById(a.getDoctorId()).orElseThrow();
 		Branch b = branches.findById(a.getBranchId()).orElseThrow();
-		LocalDateTime deadline = deadline(a);
-		boolean canChange = a.getStatus() == Appointment.Status.BOOKED && LocalDateTime.now(clock).isBefore(deadline);
+		LocalDateTime deadline = a.getStartAt() == null ? null : deadline(a);   // walk-ins have no time
+		boolean canChange = a.getStatus() == Appointment.Status.BOOKED && deadline != null
+				&& LocalDateTime.now(clock).isBefore(deadline);
 		int left = Math.max(0, rules.maxReschedules() - a.getRescheduleCount());
-		return new AppointmentView(a.getBookingRef(), a.getStatus(), a.getTokenNo(), a.getStartAt(),
+		return new AppointmentView(a.getBookingRef(), a.getStatus(), a.getTokenNo(), a.getApptDate(), a.getStartAt(),
 				slot == null ? null : slot.getEndAt(),
 				new DoctorInfo(d.getId(), d.getFullName(), d.getSpeciality().getName(), d.getConsultationFee()),
 				new BranchInfo(b.getCode(), b.getName(), b.getCity(), b.getAddress(), b.getPhone()),

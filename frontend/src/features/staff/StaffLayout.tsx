@@ -34,10 +34,12 @@ interface NavItem {
   roles: Role[]
 }
 
-// Later milestones add appointments, patients, queue and schedule here (DESIGN.md §6).
+// Later milestones add patients and the doctor's queue here (DESIGN.md §6).
 const NAV: NavItem[] = [
   { to: '/staff/dashboard', key: 'staff.nav.dashboard', roles: ['DOCTOR', 'RECEPTIONIST', 'IT_ADMIN'] },
+  { to: '/staff/appointments', key: 'staff.nav.appointments', roles: ['DOCTOR', 'RECEPTIONIST', 'IT_ADMIN'] },
   { to: '/staff/book', key: 'staff.nav.newBooking', roles: ['RECEPTIONIST', 'IT_ADMIN'] },
+  { to: '/staff/reports', key: 'staff.nav.reports', roles: ['RECEPTIONIST', 'IT_ADMIN'] },
   { to: '/staff/schedule', key: 'staff.nav.schedule', roles: ['DOCTOR', 'IT_ADMIN'] },
   { to: '/staff/admin/users', key: 'staff.nav.users', roles: ['IT_ADMIN'] },
   { to: '/staff/admin/doctors', key: 'staff.nav.doctors', roles: ['IT_ADMIN'] },

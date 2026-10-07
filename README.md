@@ -87,6 +87,17 @@ The website shows a yellow **SAMPLE DATA** banner while sample data is in use.
   `CAPTCHA_ENABLED=false` in `backend/.env` and leave the site key out.
 - SMS / WhatsApp are not sent yet: the backend log shows `[would send SMS] …` lines instead.
 
+## Reception, dashboard and reports (local)
+
+- http://localhost:5173/staff/appointments — the day's list (a receptionist starts on their own branch):
+  check in (pick a suggested patient or register a new one, which gives the UHID), no-show, cancel,
+  reschedule to any doctor, walk-ins, and the "patients to call" list after leave / holidays.
+  Check-in works only for **today's** bookings, and no-show only after the booking time.
+- http://localhost:5173/staff/dashboard — counts per hospital and doctor for any date; CSV / Excel export.
+- http://localhost:5173/staff/reports — six reports with CSV / Excel export and print.
+- Bookings nobody checked in become `NO_SHOW` at 23:55 IST (and at startup for earlier days).
+- Doctors (`doctor001` …) see only their own appointments and figures, and complete their checked-in visits.
+
 ## Staff portal logins (local)
 
 Open http://localhost:5173/staff/login.
@@ -96,7 +107,7 @@ Open http://localhost:5173/staff/login.
 | `admin` | IT Admin (created once from `BOOTSTRAP_ADMIN_PASSWORD`) | `BOOTSTRAP_ADMIN_PASSWORD` in `backend/.env`; must be changed at first login |
 | `itadmin` | IT Admin (sample) | `DEV_SAMPLE_PASSWORD` in `backend/.env` |
 | `reception.mlg`, `reception.hzn`, `reception.kdd` | Receptionist at that branch (sample) | `DEV_SAMPLE_PASSWORD` |
-| `doctor001` … `doctor020` | Doctor login for sample doctor SAMPLE-001 … 020 (sees only their own schedule) | `DEV_SAMPLE_PASSWORD` |
+| `doctor001` … `doctor020` | Doctor login for sample doctor SAMPLE-001 … 020 (sees only their own schedule, appointments and dashboard) | `DEV_SAMPLE_PASSWORD` |
 
 Sample logins exist only in the `local` profile. Five wrong passwords lock an account for 15 minutes;
 an IT Admin can unlock it with "Reset password".
@@ -122,7 +133,12 @@ backend/
     security/    JWT config, access/refresh tokens, password rules, current-user helper
     user/        login/refresh/logout/change-password, staff user admin, bootstrap admin, local sample logins
     audit/       audit log (write + IT Admin viewer)
-    appointment/ booking, lookup, cancel, reschedule, counter booking, free-slot queries
+    appointment/ booking, lookup, cancel, reschedule, counter booking, free-slot queries;
+                 reception list, check-in, status changes, walk-ins, end-of-day no-show job
+    patient/     registration with UHID (minimal in M6; full patient module in M7)
+    visit/       visits opened at check-in (clinical entry in M8)
+    dashboard/   day counts network → branch → doctor, export
+    report/      reports (SQL) + CSV / XLSX writer
     captcha/     Cloudflare Turnstile verification
     notification/  SMS / WhatsApp hook (log-only in Phase 1)
     branch/ speciality/ doctor/ gallery/   public API (/api/public/**) + IT Admin API (/api/admin/**)
@@ -130,7 +146,7 @@ backend/
     storage/     image upload checks, resizing, file storage, /files/** serving
   src/main/resources/
     application.yml (+ -local / -cloud)
-    db/migration/  Flyway: V1 schema, V2 reference data (all environments)
+    db/migration/  Flyway: V1 schema, V2 reference data, V3 scheduling, V4 reception indexes (all environments)
     db/dev-data/   Flyway: fictional sample data (local profile only)
 frontend/
   src/api/        typed API client + React Query hooks

@@ -79,6 +79,13 @@ public interface SlotRepository extends JpaRepository<Slot, Long> {
 			where s.id = :id and s.status = com.vihan.hospital.schedule.Slot.Status.BOOKED""")
 	int releaseIfBooked(@Param("id") Long id);
 
+	/** [branchId, doctorId, count] of slots on a day still open after {@code after} (dashboard "open slots remaining"). */
+	@Query("""
+			select s.branchId, s.doctorId, count(s) from Slot s
+			where s.slotDate = :date and s.status = com.vihan.hospital.schedule.Slot.Status.OPEN and s.startAt > :after
+			group by s.branchId, s.doctorId""")
+	List<Object[]> countOpen(@Param("date") LocalDate date, @Param("after") LocalDateTime after);
+
 	/** Open slots of a doctor at a branch starting after {@code after}, up to and including {@code toDate}. */
 	@Query("""
 			select s from Slot s

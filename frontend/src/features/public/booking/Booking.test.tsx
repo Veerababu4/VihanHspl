@@ -15,7 +15,7 @@ const slots: PublicSlot[] = [
   { slotId: 502, startAt: `${tomorrow}T10:20:00`, endAt: `${tomorrow}T10:40:00`, tokenNo: 2 },
 ]
 const confirmed: AppointmentView = {
-  bookingRef: 'VMH-261006-7K3Q', status: 'BOOKED', tokenNo: 2, startAt: `${tomorrow}T10:20:00`, endAt: `${tomorrow}T10:40:00`,
+  bookingRef: 'VMH-261006-7K3Q', status: 'BOOKED', tokenNo: 2, date: tomorrow, startAt: `${tomorrow}T10:20:00`, endAt: `${tomorrow}T10:40:00`,
   doctor: { id: 6, fullName: 'Dr. Venkata Ramana Pulla', speciality: 'Cardiology', consultationFee: 800 },
   branch: { code: 'KDD', name: 'Vihan Multi Speciality Hospital - Kodad', city: 'Kodad', address: 'Main Road', phone: '0000000003' },
   patientName: 'Ravi Kumar', patientAge: 42, patientGender: 'M', mobileMasked: '98XXXXXX10', reason: null, channel: 'ONLINE',

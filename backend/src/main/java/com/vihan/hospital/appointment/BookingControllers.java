@@ -89,7 +89,7 @@ public final class BookingControllers {
 
 	}
 
-	/** Counter / phone booking (FR-R3). The appointment list and status workflow arrive in M6. */
+	/** Counter / phone booking (FR-R3). The list and status workflow are in {@link ReceptionController}. */
 	@RestController
 	@RequestMapping("/api/staff/appointments")
 	@PreAuthorize("hasAnyRole('RECEPTIONIST', 'IT_ADMIN')")

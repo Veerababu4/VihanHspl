@@ -18,7 +18,7 @@ import com.vihan.hospital.schedule.Slot;
 
 /**
  * A booking (DESIGN.md §9.3, §10.4). Holds the patient details as typed by the booker; the link to
- * a registered patient ({@code patientId}) is made at check-in (M6/M7).
+ * a registered patient ({@code patientId}) is made at check-in (M6). Walk-ins have no slot.
  */
 @Entity
 @Table(name = "appointment")
@@ -133,6 +133,31 @@ public class Appointment extends AuditableEntity {
 		return a;
 	}
 
+	/**
+	 * A walk-in without a slot (FR-R5): already checked in, token after the doctor's last one that day.
+	 * The patient is registered first (DESIGN.md §19.5), so the details come from the patient record.
+	 */
+	public static Appointment walkIn(String bookingRef, Long doctorId, Long branchId, LocalDate date, int tokenNo,
+			Long patientId, PatientDetails patient, LocalDateTime now) {
+		Appointment a = new Appointment();
+		a.bookingRef = bookingRef;
+		a.doctorId = doctorId;
+		a.branchId = branchId;
+		a.apptDate = date;
+		a.tokenNo = tokenNo;
+		a.patientId = patientId;
+		a.patientName = patient.name();
+		a.patientMobile = patient.mobile();
+		a.patientAge = patient.age();
+		a.patientGender = patient.gender();
+		a.reason = patient.reason();
+		a.channel = Channel.WALK_IN;
+		a.status = Status.CHECKED_IN;
+		a.consentAt = now;
+		a.checkedInAt = now;
+		return a;
+	}
+
 	public void cancel(String reason, CancelledBy by) {
 		requireStatus(Status.BOOKED);
 		this.status = Status.CANCELLED;
@@ -141,12 +166,38 @@ public class Appointment extends AuditableEntity {
 		this.needsAction = false;
 	}
 
-	/** Reschedule: same booking reference, new slot and token; clears the "needs action" flag. */
+	/** Patient reschedule: same booking reference, new slot and token; counts toward the online limit. */
 	public void moveTo(Slot slot) {
+		moveByStaff(slot);
+		this.rescheduleCount++;
+	}
+
+	/** Staff reschedule (FR-R6): any doctor; does not use up the patient's own reschedules. */
+	public void moveByStaff(Slot slot) {
 		requireStatus(Status.BOOKED);
 		placeOn(slot);
-		this.rescheduleCount++;
 		this.needsAction = false;
+	}
+
+	/** Check-in links the booking to a registered patient (DESIGN.md §10.4, FR-R4). */
+	public void checkIn(Long patientId, LocalDateTime now) {
+		requireStatus(Status.BOOKED);
+		this.patientId = patientId;
+		this.status = Status.CHECKED_IN;
+		this.checkedInAt = now;
+		this.needsAction = false;
+	}
+
+	public void markNoShow() {
+		requireStatus(Status.BOOKED);
+		this.status = Status.NO_SHOW;
+		this.needsAction = false;
+	}
+
+	public void complete(LocalDateTime now) {
+		requireStatus(Status.CHECKED_IN);
+		this.status = Status.COMPLETED;
+		this.completedAt = now;
 	}
 
 	private void placeOn(Slot slot) {
@@ -246,6 +297,10 @@ public class Appointment extends AuditableEntity {
 
 	public LocalDateTime getConsentAt() {
 		return consentAt;
+	}
+
+	public LocalDateTime getCheckedInAt() {
+		return checkedInAt;
 	}
 
 }

@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Version** | 0.8 — M5 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3) |
-| **Date** | 2026-10-06 |
+| **Version** | 0.9 — M6 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3 · v0.9: M6 reception, dashboard, reports §10.4–10.6, §11.4) |
+| **Date** | 2026-10-07 |
 | **Owner** | Veera |
-| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → M4 ✅ → **M5 booking complete (2026-10-06)** → M6 next |
+| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → M4 ✅ → M5 ✅ → **M6 reception & dashboard complete (2026-10-07)** → M7 next |
 
 > **How to review:** Read sections 1–6 for *what* we are building, 7–12 for *how*, and 13–16 for setup/deployment/plan.
 > **Section 19 explains how the 8 additional requirements found during the initial review are handled.**
@@ -246,7 +246,7 @@ UI: mobile-first, responsive, hospital brand colours (to be confirmed — §17),
 | UI | **Tailwind CSS** + a small component kit (shadcn/ui style) | Responsive, quick to style |
 | Frontend libs | React Router 7 (v8 needs Node ≥ 22.22), TanStack Query (API caching), React Hook Form + Zod (forms/validation), Recharts (dashboard chart). SEO tags use React 19's built-in `<title>`/`<meta>` support (no react-helmet-async needed) | |
 | Backend | **Java 21 LTS + Spring Boot 4.1.1** (Spring Security 7, Hibernate 7.4, Jackson 3) | Single REST API, Maven wrapper (`mvnw`) — no global Maven needed |
-| Backend libs | Spring Web, Spring Data JPA (Hibernate), Spring Security, Bean Validation, Flyway, Spring Security OAuth2 Resource Server (JWT via Nimbus; replaces the jjwt library first planned: same HS256 tokens, less custom security code), Bucket4j (rate limit), Thumbnailator (image resize) + TwelveMonkeys `imageio-webp` (Java can't decode WebP by itself), Apache POI or OpenCSV (export), springdoc-openapi (Swagger UI) | |
+| Backend libs | Spring Web, Spring Data JPA (Hibernate), Spring Security, Bean Validation, Flyway, Spring Security OAuth2 Resource Server (JWT via Nimbus; replaces the jjwt library first planned: same HS256 tokens, less custom security code), Bucket4j (rate limit), Thumbnailator (image resize) + TwelveMonkeys `imageio-webp` (Java can't decode WebP by itself), **fastexcel** 0.20 for XLSX export (chosen over Apache POI: a few hundred KB instead of ~20 MB, and only writing is needed; CSV is written by hand, no library), springdoc-openapi (Swagger UI) | |
 | Database | **Oracle** — local: Oracle Database Free; cloud: **Oracle Autonomous Database (Always Free)** | JDBC driver `ojdbc17` |
 | Migrations | **Flyway 12** (`flyway-database-oracle`) | Same scripts for local & cloud |
 | Auth | Spring Security + JWT + BCrypt | The staff portal is a separate lazy-loaded bundle, so public visitors never download it |
@@ -694,11 +694,42 @@ Cancel → appointment `CANCELLED`, slot back to `OPEN` (if slot still in future
 - Reschedule keeps the status `BOOKED` (only the slot changes).
 - Invalid transitions → `409`.
 
+**As built (M6):**
+- Who may do what (checked in `ReceptionService`; the list returns an `actions` object per appointment, so the screen shows only the allowed buttons):
+
+  | Change | From | Who | Extra rule |
+  |---|---|---|---|
+  | Check in | BOOKED | Receptionist, IT Admin | appointment date = today; a registered patient is chosen or registered (§19.5); creates the `VISIT` (OP) |
+  | Cancel | BOOKED | Receptionist, IT Admin, own doctor | reason required; slot freed + reconciled (as in M5) |
+  | No-show | BOOKED | Receptionist, IT Admin, own doctor | only after the start time (`409 TOO_EARLY` before) |
+  | Complete | CHECKED_IN | own doctor, IT Admin | the visit becomes `COMPLETED` too (until M8 adds the doctor's visit screen) |
+  | Reschedule | BOOKED | Receptionist, IT Admin | any open future slot of **any** doctor; reason required; does **not** count toward the patient's 2 online changes |
+- **Walk-ins** (FR-R5): the patient is found by mobile or registered first, then `POST /staff/appointments/walk-in` creates an appointment with no slot, channel `WALK_IN`, status `CHECKED_IN` and its visit. Token = the doctor's highest token that day at that branch (slots and earlier walk-ins) + 1; the doctor row is locked (`SELECT … FOR UPDATE`) so two walk-ins can't get the same number. *Known limit:* an extra session added later that same day numbers its slots from the last **slot** token, so it could repeat a walk-in's number; rare, and the queue order is still by time.
+- **End-of-day job** (`NoShowJob`): 23:55 IST marks every `BOOKED` appointment up to today as `NO_SHOW`; at startup it catches up only to *yesterday*, so a late patient can still be checked in today after a restart. One audit entry per run with the count.
+- **"Often doesn't come" flag:** a mobile with 3 or more `NO_SHOW`s in the last 30 days is flagged on the list (reception may call to confirm).
+- **Search:** a full booking reference finds that booking on any date; anything else filters the chosen day by name, mobile (3+ digits) or reference.
+- New audit actions: `APPOINTMENT_CHECKED_IN`, `APPOINTMENT_STATUS_CHANGED`, `WALK_IN_CREATED`, `PATIENT_CREATED`, `REPORT_EXPORTED`; staff cancel / reschedule reuse `APPOINTMENT_CANCELLED` / `APPOINTMENT_RESCHEDULED` with "by staff: reason". The patient is notified of staff cancels and reschedules (log-only until SMS is chosen).
+
 ### 10.5 Dashboard query
 One query per request: `SELECT branch_id, doctor_id, status, COUNT(*) FROM appointment WHERE appt_date = :d GROUP BY …` plus open-slot counts from `slot`; assembled into network → branch → doctor tree with Java collections (§7). Cached 30 s.
 
+**As built (M6):** the day's `(branch, doctor, status)` rows are read once and grouped with `Collectors.groupingBy(branch, groupingBy(doctor, groupingBy(status, EnumMap, counting())))`; open slots = `OPEN` slots of that day starting after *now* (so past free slots of today don't count). Doctors with free slots but no appointments are listed too. **No 30 s cache:** both queries take milliseconds at this size and reception wants live numbers after each check-in. A doctor gets only their own figures (`doctorOnly: true`). Export (`/summary/export?format=csv|xlsx`, reception / IT Admin) writes the doctor rows plus branch and network totals and is audit-logged.
+
+**Reports (FR-D6, as built):** `GET /staff/reports/{type}?from=&to=&branch=&period=day|month&format=json|csv|xlsx`, one shape for all (`ReportTable {title, subtitle, columns, rows}`), plain SQL with `GROUP BY` (`ReportService`). Range ≤ 92 days (daily register ≤ 31). Exports are audit-logged; CSV starts with a UTF-8 BOM (Excel shows Telugu correctly) and cells starting with `= + - @` are prefixed with `'` (a patient could type a formula as their name on the public form). "Print" uses the browser (Save as PDF).
+
+| Report | Rows | Notes |
+|---|---|---|
+| `daily-register` | every appointment | mobile **masked** (printed and shared) |
+| `doctor-summary` | doctor × branch | utilisation % = booked slots ÷ slots not blocked |
+| `branch-summary` | period × branch | total excludes cancelled |
+| `registrations` | period × branch | new UHIDs by registered branch |
+| `channels` | branch (+ all) | all bookings made, cancelled included; online % |
+| `no-show-cancel` | period × branch × doctor | cancelled % of all; no-show % of not-cancelled |
+
 ### 10.6 Age ↔ DOB
 Registration accepts **age** (requirement) or exact DOB. If only age: `date_of_birth = 1-Jul of (current year − age)`, `dob_is_estimated = 1`. Age is always computed on display, so it stays correct over the years.
+
+*As built (M6):* before 1 July the year is one earlier (`1-Jul of (current year − age − 1)`); otherwise a patient registered as 30 in March would show as 29 straight away. The registered branch defaults to the receptionist's home branch. UHID = `VMH-<YY>-<6-digit sequence>` from `seq_uhid` (one sequence for all branches).
 
 ### 10.7 Aadhaar handling
 - Optional field. Validate 12 digits, not starting with 0/1, **Verhoeff checksum**.
@@ -727,7 +758,7 @@ Base path `/api`. JSON. Errors use a single shape: `{ "timestamp", "status", "co
 | POST | `/public/appointments/reschedule` | `{bookingRef, mobile, newSlotId}` |
 | GET | `/public/doctors/{id}/slot-days?branch=` | *(M5)* each day of the window with its number of free slots (date picker) |
 
-As built: the open-slots endpoint is `GET /public/doctors/{id}/slots?branch=CODE&date=`; booking, cancel and reschedule bodies carry `captchaToken`; booking also needs `consent: true`. Counter / phone booking is `POST /staff/appointments` with `channel: COUNTER | PHONE` (walk-ins without a slot come with check-in in M6).
+As built: the open-slots endpoint is `GET /public/doctors/{id}/slots?branch=CODE&date=`; booking, cancel and reschedule bodies carry `captchaToken`; booking also needs `consent: true`. Counter / phone booking is `POST /staff/appointments` with `channel: COUNTER | PHONE` (walk-ins without a slot: §11.4, M6).
 | GET | `/files/**` | Serve uploaded images (cache headers) |
 
 ### 11.2 Auth
@@ -768,6 +799,8 @@ As built: the manual session endpoint is `POST /staff/doctors/{id}/slots` `{bran
 | GET | `/staff/dashboard/summary/export?date=&branch=` (CSV/XLSX) | R, A |
 | GET | `/staff/reports/{reportType}?from=&to=&branch=&format=json\|csv\|xlsx` | R, A |
 
+As built (M6): walk-ins have their own endpoint, `POST /staff/appointments/walk-in` `{patientId, doctorId, branch, reason}` (R, A); `POST /staff/appointments` stays counter / phone booking. `branch` is always the branch **code** (`MLG`, `HZN`, `KDD`; blank = all); a receptionist's screens start on the home branch. `PATCH …/status` accepts `NO_SHOW | CANCELLED | COMPLETED` (check-in has its own endpoint because it needs a patient). The export takes `&format=csv|xlsx` (default xlsx); reports also take `&period=day|month`. List rows carry the full mobile (staff only), UHID once linked, the "often doesn't come" flag and `actions`. A doctor's list and dashboard are always their own, whatever `doctor=` says. The public "check my booking" view now includes `date` (a walk-in has no `startAt`).
+
 ### 11.5 Staff — patients
 | Method | Path | Roles |
 |---|---|---|
@@ -777,6 +810,8 @@ As built: the manual session endpoint is `POST /staff/doctors/{id}/slots` `{bran
 | PUT | `/staff/patients/{id}` | R, A |
 | GET | `/staff/patients/{id}/visits` (non-clinical list) | R, A, D |
 | GET | `/staff/patients/duplicates?mobile=&name=&aadhaar=` | R, A |
+
+As built (M6): `POST /staff/patients` takes the minimal form needed for check-in and walk-ins `{fullName, age | dateOfBirth, gender, mobile, branch?, consent}` and returns the UHID; `GET /staff/patients?mobile=` finds registered patients by mobile (walk-in desk). Both R, A for now. Aadhaar, contact fields, duplicate checks, the other search fields, profile, edit and the visit list come with M7.
 
 ### 11.6 Clinical (`DOCTOR` only)
 | Method | Path |
@@ -1005,7 +1040,7 @@ Each milestone ends with: working build, tests passing, demo on local, your revi
 | **M3** ✅ | Auth & users | Login (with showcase panel), JWT + refresh, roles, lockout, change/reset password, user admin, audit log; **IT Admin screens** for doctors, branches, specialities, gallery (APIs from M2) |
 | **M4** ✅ | Scheduling | Schedule templates, slot generation job, manual slots, block, leave, holidays, overlap validation |
 | **M5** ✅ | Booking | Public booking wizard, captcha, rate limits, confirmation, lookup/cancel; counter/phone booking; concurrency tests |
-| **M6** | Reception & dashboard | Appointment list, status workflow, check-in + patient linking, dashboard (doctor/branch/network), export |
+| **M6** ✅ | Reception & dashboard | Appointment list, status workflow, check-in + patient linking, dashboard (doctor/branch/network), export. *Also built:* walk-ins, staff reschedule, "patients to call" list, end-of-day no-show job, the six reports of FR-D6 (CSV / XLSX / print), minimal patient registration (UHID) needed for check-in |
 | **M7** | Patients | Registration (Aadhaar encryption, duplicates), search, profile, visit list |
 | **M8** | Clinical | Doctor queue, visit entry, prescriptions, medical profile, history, print prescription |
 | **M9** | Hardening & UAT | Security headers, E2E tests, performance check, accessibility pass, UAT with real data |
@@ -1130,4 +1165,4 @@ The original input had 10 points. The initial review found **8 further requireme
 
 ---
 
-*End of document — v0.8.*
+*End of document — v0.9.*

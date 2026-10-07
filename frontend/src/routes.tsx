@@ -12,6 +12,7 @@ import { AppointmentStatusPage, BookingPage, ConfirmationPage } from './features
 import { AboutPage, ContactPage } from './features/public/InfoPages'
 import { PrivacyPage } from './features/public/PrivacyPage'
 import {
+  AppointmentsPage,
   AuditPage,
   BranchesAdminPage,
   CounterBookingPage,
@@ -20,6 +21,7 @@ import {
   GalleryAdminPage,
   LoginPage,
   ProfilePage,
+  ReportsPage,
   RequireRole,
   SchedulePage,
   StaffLayout,
@@ -63,6 +65,8 @@ export const routes: RouteObject[] = [
               { index: true, element: <Navigate to="dashboard" replace /> },
               { path: 'dashboard', element: <DashboardPage /> },
               { path: 'profile', element: <ProfilePage /> },
+              { path: 'appointments', element: <AppointmentsPage /> },
+              { path: 'reports', element: <RequireRole roles={['RECEPTIONIST', 'IT_ADMIN']}><ReportsPage /></RequireRole> },
               { path: 'book', element: <RequireRole roles={['RECEPTIONIST', 'IT_ADMIN']}><CounterBookingPage /></RequireRole> },
               { path: 'schedule', element: <RequireRole roles={['DOCTOR', 'IT_ADMIN']}><SchedulePage /></RequireRole> },
               { path: 'admin/users', element: itAdmin(<UsersPage />) },

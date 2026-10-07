@@ -33,7 +33,7 @@ export function AppointmentCard({ appointment: a }: { appointment: AppointmentVi
         <div>
           <dt className="text-sm text-slate-500">{t('confirmation.when')}</dt>
           <dd className="font-semibold">
-            {shortDate(a.startAt.slice(0, 10))}, {formatTime(timeOf(a.startAt))}
+            {shortDate(a.date)}, {a.startAt ? formatTime(timeOf(a.startAt)) : t('confirmation.walkIn')}
           </dd>
         </div>
         <div>

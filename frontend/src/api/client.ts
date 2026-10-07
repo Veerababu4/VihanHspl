@@ -41,7 +41,30 @@ export function setAuthHooks(hooks: AuthHooks | null) {
 // Paths where a 401 means "wrong password / session over", not "access token expired".
 const NO_RETRY = ['/auth/login', '/auth/refresh', '/auth/logout']
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
+export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await send(path, init)
+  if (response.status === 204) return undefined as T
+  return (await response.json()) as T
+}
+
+/**
+ * Downloads a file the API generates (CSV / XLSX exports). A plain link can't be used: the
+ * access token is in memory, not a cookie, so the file is fetched here and saved from a blob.
+ */
+export async function apiDownload(path: string, fileName: string): Promise<void> {
+  const response = await send(path, { headers: { Accept: '*/*' } })
+  const url = URL.createObjectURL(await response.blob())
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+/** fetch with the access token; refreshes it once on 401 and turns error responses into ApiError. */
+async function send(path: string, init: RequestInit, retried = false): Promise<Response> {
   const token = authHooks?.getAccessToken()
   const isForm = init.body instanceof FormData
   let response: Response
@@ -63,15 +86,14 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
   // Access token expired (30 min): refresh once and retry.
   if (response.status === 401 && token && !retried && authHooks && !NO_RETRY.includes(path)) {
     const fresh = await authHooks.refresh()
-    if (fresh) return apiRequest<T>(path, init, true)
+    if (fresh) return send(path, init, true)
   }
 
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as Partial<ApiErrorBody>
     throw new ApiError(response.status, body)
   }
-  if (response.status === 204) return undefined as T
-  return (await response.json()) as T
+  return response
 }
 
 export const apiGet = <T,>(path: string) => apiRequest<T>(path)
