@@ -80,6 +80,22 @@ public class Visit extends AuditableEntity {
 		return patientId;
 	}
 
+	public Long getDoctorId() {
+		return doctorId;
+	}
+
+	public Long getBranchId() {
+		return branchId;
+	}
+
+	public LocalDate getVisitDate() {
+		return visitDate;
+	}
+
+	public Type getVisitType() {
+		return visitType;
+	}
+
 	public Status getStatus() {
 		return status;
 	}

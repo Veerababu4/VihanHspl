@@ -32,3 +32,9 @@ export function shortDate(iso: string): string {
 export function timeOf(isoDateTime: string): string {
   return isoDateTime.slice(11, 16)
 }
+
+/** "1993-07-01" → "1 Jul 1993" (birth dates, past visits) */
+export function fullDate(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+}

@@ -23,6 +23,8 @@ export function CheckInDialog({
   const checkIn = useCheckIn()
   const [registering, setRegistering] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Booked with a UHID whose mobile matched (DESIGN.md §19.5): offer that patient first.
+  const prelinked = a.patientId != null && a.uhid ? a.patientId : null
 
   const run = async (patientId: number) => {
     setError(null)
@@ -45,6 +47,15 @@ export function CheckInDialog({
           })}
         </p>
         {error && <Alert>{error}</Alert>}
+
+        {prelinked !== null && !registering && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+            <p className="text-sm font-medium text-emerald-900">{t('staff.checkIn.prelinked', { name: a.patientName, uhid: a.uhid })}</p>
+            <Button onClick={() => run(prelinked)} disabled={checkIn.isPending}>
+              {checkIn.isPending ? t('staff.checkIn.checkingIn') : t('staff.appointments.checkIn')}
+            </Button>
+          </div>
+        )}
 
         {!registering && (
           <section aria-labelledby="matches-heading">
@@ -96,6 +107,7 @@ export function CheckInDialog({
               prefill={{ fullName: a.patientName, age: a.patientAge, gender: a.patientGender, mobile: a.mobile, branch: a.branchCode }}
               submitLabel={t('staff.checkIn.registerNew')}
               onRegistered={(p) => run(p.id)}
+              onUseExisting={(p) => run(p.id)}
             />
           </section>
         )}

@@ -179,6 +179,12 @@ public class Appointment extends AuditableEntity {
 		this.needsAction = false;
 	}
 
+	/** Booked with a UHID whose mobile matched (DESIGN.md §19.5); check-in may still pick someone else. */
+	public void linkPatient(Long patientId) {
+		requireStatus(Status.BOOKED);
+		this.patientId = patientId;
+	}
+
 	/** Check-in links the booking to a registered patient (DESIGN.md §10.4, FR-R4). */
 	public void checkIn(Long patientId, LocalDateTime now) {
 		requireStatus(Status.BOOKED);

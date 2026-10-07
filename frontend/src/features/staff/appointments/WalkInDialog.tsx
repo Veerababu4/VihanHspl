@@ -24,7 +24,9 @@ export function WalkInDialog({
   const [mobile, setMobile] = useState('')
   const [found, setFound] = useState<PatientSummary[] | null>(null)
   const [patient, setPatient] = useState<PatientSummary | null>(null)
-  const [branch, setBranch] = useState(defaultBranch ?? '')
+  // Until someone picks a hospital, follow the default (it may arrive after the dialog opens).
+  const [branchChoice, setBranch] = useState<string>()
+  const branch = branchChoice ?? defaultBranch ?? ''
   const [doctorId, setDoctorId] = useState<number>()
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -106,6 +108,7 @@ export function WalkInDialog({
                   key={mobile}
                   prefill={{ mobile: normalizeMobile(mobile) ?? mobile, branch: branch || null }}
                   onRegistered={setPatient}
+                  onUseExisting={setPatient}
                 />
               </section>
             )}

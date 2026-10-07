@@ -20,7 +20,7 @@ const confirmed: AppointmentView = {
   branch: { code: 'KDD', name: 'Vihan Multi Speciality Hospital - Kodad', city: 'Kodad', address: 'Main Road', phone: '0000000003' },
   patientName: 'Ravi Kumar', patientAge: 42, patientGender: 'M', mobileMasked: '98XXXXXX10', reason: null, channel: 'ONLINE',
   rescheduleCount: 0, reschedulesLeft: 2, canCancel: true, canReschedule: true, changeDeadline: `${tomorrow}T09:20:00`,
-  needsAction: false, cancelReason: null,
+  needsAction: false, cancelReason: null, uhid: null,
 }
 
 const api = {
@@ -65,7 +65,7 @@ describe('Booking wizard', () => {
     expect(screen.getByText(/arrive 15 minutes early/)).toBeInTheDocument()
     expect(requestBody(spy, 'POST /public/appointments')).toEqual({
       slotId: 502, patientName: 'Ravi Kumar', patientAge: 42, patientGender: 'M', mobile: '9876543210',
-      reason: null, consent: true, captchaToken: NO_CAPTCHA_TOKEN,
+      reason: null, uhid: null, consent: true, captchaToken: NO_CAPTCHA_TOKEN,
     })
   })
 

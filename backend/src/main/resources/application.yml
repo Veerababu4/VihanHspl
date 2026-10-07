@@ -87,6 +87,9 @@ app:
     enabled: ${CAPTCHA_ENABLED:true}  # false only for offline development
     secret-key: ${TURNSTILE_SECRET_KEY:}
     expected-hostname: ${TURNSTILE_HOSTNAME:}   # blank = don't check (test keys report example.com)
+  aadhaar:                          # DESIGN.md §10.7: Base64 of 32 random bytes each; required
+    enc-key: ${AADHAAR_ENC_KEY:}      # AES-256-GCM (losing it makes stored numbers unreadable)
+    hash-key: ${AADHAAR_HASH_KEY:}    # HMAC-SHA256 for search / uniqueness (changing it breaks search)
   rate-limit:
     booking-per-minute: 10            # per IP: book / cancel / reschedule (§12.4)
     lookup-per-minute: 30             # per IP: check booking

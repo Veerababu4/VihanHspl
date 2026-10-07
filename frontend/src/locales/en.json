@@ -193,7 +193,8 @@
       "schedule": "Schedule",
       "newBooking": "New booking",
       "appointments": "Appointments",
-      "reports": "Reports"
+      "reports": "Reports",
+      "patients": "Patients"
     },
     "roles": {
       "DOCTOR": "Doctor",
@@ -518,7 +519,8 @@
       },
       "pick": "Check in as this patient",
       "registerNew": "Register as a new patient",
-      "checkingIn": "Checking in…"
+      "checkingIn": "Checking in…",
+      "prelinked": "Booked for registered patient {{name}} ({{uhid}})"
     },
     "patient": {
       "title": "New patient",
@@ -539,8 +541,23 @@
         "mobile": "Enter a 10-digit mobile number",
         "consent": "The patient must agree to continue",
         "gender": "Please choose",
-        "branch": "Please choose"
-      }
+        "branch": "Please choose",
+        "aadhaar": "Not a valid Aadhaar number. Check the 12 digits."
+      },
+      "details": "More details (optional)",
+      "aadhaar": "Aadhaar number (optional)",
+      "aadhaarHint": "Stored encrypted; only the last 4 digits are ever shown.",
+      "altMobile": "Alternate mobile",
+      "address": "Address",
+      "city": "City / village",
+      "bloodGroup": "Blood group",
+      "emergencyName": "Emergency contact name",
+      "emergencyPhone": "Emergency contact mobile",
+      "duplicateTitle": "This may be someone already registered",
+      "duplicateIntro": "Same mobile number and a similar name:",
+      "useExisting": "Use this patient",
+      "openRecord": "Open record",
+      "registerAnyway": "Different person — register anyway"
     },
     "walkIn": {
       "title": "Walk-in patient",
@@ -583,6 +600,59 @@
       "rows_other": "{{count}} rows",
       "mobileMasked": "Mobile numbers are masked in this report.",
       "last30": "Last 30 days"
+    },
+    "patients": {
+      "title": "Patients",
+      "searchBy": "Search by",
+      "by": {
+        "name": "Name",
+        "mobile": "Mobile",
+        "uhid": "UHID",
+        "aadhaar": "Aadhaar"
+      },
+      "text": "Search for",
+      "search": "Search",
+      "register": "Register patient",
+      "none": "No patient found.",
+      "results_one": "{{count}} patient",
+      "results_other": "{{count}} patients",
+      "aadhaarNote": "Aadhaar searches are recorded in the audit log.",
+      "back": "Back to patients",
+      "newTitle": "Register patient",
+      "uhid": "UHID",
+      "age": "Age",
+      "ageValue": "{{age}} years",
+      "dob": "Date of birth",
+      "estimated": "(estimated from age)",
+      "gender": "Gender",
+      "mobile": "Mobile",
+      "altMobile": "Alternate mobile",
+      "aadhaar": "Aadhaar",
+      "address": "Address",
+      "city": "City / village",
+      "bloodGroup": "Blood group",
+      "emergency": "Emergency contact",
+      "registered": "Registered",
+      "registeredValue": "{{date}} at {{branch}}",
+      "edit": "Edit details",
+      "editTitle": "Edit patient details",
+      "aadhaarKeep": "Leave empty to keep {{masked}}.",
+      "removeAadhaar": "Remove the stored Aadhaar number",
+      "saved": "Details saved.",
+      "upcoming": "Upcoming appointments",
+      "noUpcoming": "No upcoming appointments linked to this patient.",
+      "visits": "Visits",
+      "noVisits": "No visits yet.",
+      "visitTypes": {
+        "OP": "Out-patient",
+        "FOLLOW_UP": "Follow-up",
+        "EMERGENCY": "Emergency"
+      },
+      "visitStatus": {
+        "OPEN": "In progress",
+        "COMPLETED": "Completed"
+      },
+      "clinicalNote": "Diagnosis, notes and prescriptions are visible to doctors only."
     }
   },
   "booking": {
@@ -636,7 +706,9 @@
       "gender": "Please choose",
       "mobile": "Enter a 10-digit mobile number",
       "consent": "Please accept to continue"
-    }
+    },
+    "uhid": "UHID (if you have one)",
+    "uhidHint": "From an earlier visit, e.g. VMH-26-000123. Optional."
   },
   "confirmation": {
     "title": "Booking confirmed",
@@ -653,7 +725,8 @@
     "check": "Check or change my booking",
     "home": "Back to home",
     "missing": "Your booking {{ref}} is saved. To see its details, use \"Check my booking\" with your mobile number.",
-    "walkIn": "walk-in"
+    "walkIn": "walk-in",
+    "uhid": "Linked to your patient record {{uhid}}"
   },
   "status": {
     "title": "Check my booking",

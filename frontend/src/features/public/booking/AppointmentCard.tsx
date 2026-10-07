@@ -72,6 +72,7 @@ export function AppointmentCard({ appointment: a }: { appointment: AppointmentVi
         {a.status === 'BOOKED' && <p className="font-medium text-slate-800">{t('confirmation.arrive')}</p>}
         {a.status === 'BOOKED' && fee && <p className="text-slate-600">{t('confirmation.pay', { fee })}</p>}
         {a.cancelReason && <p className="text-slate-600">{t('status.cancelReasonShown', { reason: a.cancelReason })}</p>}
+        {a.uhid && <p className="text-slate-600">{t('confirmation.uhid', { uhid: a.uhid })}</p>}
       </div>
     </article>
   )

@@ -29,6 +29,9 @@ import org.springframework.test.context.TestPropertySource;
 		"app.auth.jwt-secret=test-secret-for-integration-tests-only-0123456789",
 		"app.auth.dev-sample-password=" + VihanIntegrationTest.SAMPLE_PASSWORD,
 		"app.auth.bootstrap-admin-password=",
+		// Fixed test-only Aadhaar keys (32 bytes each); real keys come from .env
+		"app.aadhaar.enc-key=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
+		"app.aadhaar.hash-key=ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=",
 		// Tests log in many times from one address; the login limit itself is unit-tested.
 		"app.rate-limit.login-per-minute=1000" })
 public @interface VihanIntegrationTest {

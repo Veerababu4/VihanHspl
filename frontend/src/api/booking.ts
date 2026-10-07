@@ -42,6 +42,8 @@ export interface AppointmentView {
   changeDeadline: string | null
   needsAction: boolean
   cancelReason: string | null
+  /** the registered patient this booking is linked to, if any */
+  uhid: string | null
 }
 
 export interface PatientInput {
@@ -51,6 +53,8 @@ export interface PatientInput {
   mobile: string
   reason: string | null
   consent: boolean
+  /** optional, for returning patients (DESIGN.md §19.5) */
+  uhid?: string | null
 }
 
 export const useSlotDays = (doctorId: number | undefined, branch: string | undefined) =>

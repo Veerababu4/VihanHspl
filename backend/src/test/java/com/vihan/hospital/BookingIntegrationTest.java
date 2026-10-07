@@ -230,7 +230,7 @@ class BookingIntegrationTest {
 			results.add(pool.submit(() -> {
 				start.await();
 				try {
-					bookingService.bookOnline(new BookingRequest(slotId, "Parallel Patient", 30, "F", mobile, null, true, "pass"), "10.0.0.1");
+					bookingService.bookOnline(new BookingRequest(slotId, "Parallel Patient", 30, "F", mobile, null, true, "pass", null), "10.0.0.1");
 					return "BOOKED";
 				}
 				catch (ApiException e) {

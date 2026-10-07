@@ -30,7 +30,11 @@ public final class AppointmentDtos {
 
 	// ---- requests ----
 
-	/** Online booking (FR-B1). The privacy consent box must be ticked (DESIGN.md §19.1). */
+	/**
+	 * Online booking (FR-B1). The privacy consent box must be ticked (DESIGN.md §19.1).
+	 *
+	 * @param uhid optional, for returning patients: linked only if that patient has this mobile (§19.5)
+	 */
 	public record BookingRequest(
 			@NotNull Long slotId,
 			@NotBlank @Size(min = 2, max = 120) String patientName,
@@ -39,10 +43,11 @@ public final class AppointmentDtos {
 			@NotBlank @IndianMobile String mobile,
 			@Size(max = 500) String reason,
 			@AssertTrue(message = "please accept the privacy notice") boolean consent,
-			String captchaToken) {
+			String captchaToken,
+			@Size(max = 20) String uhid) {
 	}
 
-	/** Counter / phone booking by reception (FR-R3): no captcha, channel recorded. */
+	/** Counter / phone booking by reception (FR-R3): no captcha, channel recorded; optionally for a registered patient (UHID + same mobile). */
 	public record StaffBookingRequest(
 			@NotNull Long slotId,
 			@NotBlank @Size(min = 2, max = 120) String patientName,
@@ -51,7 +56,8 @@ public final class AppointmentDtos {
 			@NotBlank @IndianMobile String mobile,
 			@Size(max = 500) String reason,
 			@NotNull @Pattern(regexp = "COUNTER|PHONE", message = "must be COUNTER or PHONE") String channel,
-			@AssertTrue(message = "the patient must agree to the privacy notice") boolean consent) {
+			@AssertTrue(message = "the patient must agree to the privacy notice") boolean consent,
+			@Size(max = 20) String uhid) {
 	}
 
 	public record LookupRequest(@NotBlank @Size(max = 30) String bookingRef, @NotBlank @Size(max = 20) String mobile) {
@@ -78,12 +84,13 @@ public final class AppointmentDtos {
 	 *
 	 * @param changeDeadline last moment the patient may cancel / reschedule online
 	 * @param needsAction    the doctor became unavailable; the hospital will call
+	 * @param uhid           the registered patient this booking is linked to, if any
 	 */
 	public record AppointmentView(String bookingRef, Appointment.Status status, Integer tokenNo, LocalDate date, LocalDateTime startAt,
 			LocalDateTime endAt, DoctorInfo doctor, BranchInfo branch, String patientName, Integer patientAge,
 			String patientGender, String mobileMasked, String reason, Appointment.Channel channel, int rescheduleCount,
 			int reschedulesLeft, boolean canCancel, boolean canReschedule, LocalDateTime changeDeadline,
-			boolean needsAction, String cancelReason) {
+			boolean needsAction, String cancelReason, String uhid) {
 	}
 
 }

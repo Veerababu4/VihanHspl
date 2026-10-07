@@ -74,4 +74,13 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 	@Query("select a.branchId, a.doctorId, a.status from Appointment a where a.apptDate = :date")
 	List<Object[]> statusesOn(@Param("date") LocalDate date);
 
+	/** A patient's coming appointments (linked at booking via UHID, or at check-in). */
+	@Query("""
+			select a from Appointment a
+			where a.patientId = :patientId and a.apptDate >= :from
+			  and a.status in (com.vihan.hospital.appointment.Appointment.Status.BOOKED,
+			                   com.vihan.hospital.appointment.Appointment.Status.CHECKED_IN)
+			order by a.apptDate, a.startAt""")
+	List<Appointment> findUpcomingForPatient(@Param("patientId") Long patientId, @Param("from") LocalDate from);
+
 }

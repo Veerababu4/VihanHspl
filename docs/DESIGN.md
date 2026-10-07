@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Version** | 0.9 — M6 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3 · v0.9: M6 reception, dashboard, reports §10.4–10.6, §11.4) |
+| **Version** | 0.10 — M7 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3 · v0.9: M6 reception, dashboard, reports §10.4–10.6, §11.4 · v0.10: M7 patients, Aadhaar §10.7, §11.5) |
 | **Date** | 2026-10-07 |
 | **Owner** | Veera |
-| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → M4 ✅ → M5 ✅ → **M6 reception & dashboard complete (2026-10-07)** → M7 next |
+| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → M4 ✅ → M5 ✅ → M6 ✅ → **M7 patients complete (2026-10-07)** → M8 next |
 
 > **How to review:** Read sections 1–6 for *what* we are building, 7–12 for *how*, and 13–16 for setup/deployment/plan.
 > **Section 19 explains how the 8 additional requirements found during the initial review are handled.**
@@ -261,7 +261,7 @@ UI: mobile-first, responsive, hospital brand colours (to be confirmed — §17),
 - **Reference-data cache:** branches (`LinkedHashMap` by code, display order) & specialities held as an immutable snapshot in a `volatile` field; an admin change drops it when its transaction ends and the next read reloads (`ReferenceDataCache`). Safer than clearing a shared `ConcurrentHashMap` mid-read.
 - **Doctor directory filters & profile availability:** streams + `Predicate` composition for branch / speciality / text filters; `TreeMap<branch, TreeMap<weekday, List<Session>>>` for weekly timings.
 - **Rate limiting:** `ConcurrentHashMap<String, Bucket>` keyed by IP / mobile.
-- **Duplicate patient check:** normalised-name `Set` comparison.
+- **Duplicate patient check:** normalised-name `Set` comparison. *As built (M7, `NameMatcher`):* names become word sets (upper case, punctuation and titles like Mr / Smt / B/O dropped); similar = every whole word of the shorter name is in the longer one, at least one word is shared, and each initial matches a word with that first letter ("K. Ravi Kumar" ≈ "Ravi Kumar Kandula"; "Ravi Kumar" ≠ "Sita Kumar"). Spelling variants (Laxmi / Lakshmi) are not caught.
 
 ---
 
@@ -624,7 +624,7 @@ CREATE INDEX ix_audit_time ON audit_log (created_at);
   | Source | Data |
   |---|---|
   | SQL (`db/dev-data/R__dev_sample_data.sql`) ✅ M1 | 20 **fictional** doctors (`SAMPLE-001…020`, every speciality covered, 5 serving 2–3 branches), doctor↔branch mappings, 162 weekly sessions (10:00–14:00, some 17:00–19:00, 20-min slots, no cross-branch overlaps) |
-  | Java `LocalDataSeeder` (needs app crypto; each part is built in the milestone that adds its code: users M3 ✅, slots M4, appointments M5, patients M7, visits M8) | Staff users with BCrypt passwords (1 IT Admin, doctor logins, 1 receptionist per branch; password from `DEV_SAMPLE_PASSWORD`), ~40 fictional patients (Aadhaar encrypted with the env key, checksum-valid fictional numbers), slots via the real slot generator, appointments for yesterday/today/next 7 days in every status, ~60 past visits with vitals, diagnoses and prescriptions |
+  | Java `LocalDataSeeder` (needs app crypto; each part is built in the milestone that adds its code: users M3 ✅, slots M4, appointments M5, patients M7 ✅ (`SamplePatientSeeder`: 40 fictional patients, recognised by Aadhaar hash so each is created only once), visits M8) | Staff users with BCrypt passwords (1 IT Admin, doctor logins, 1 receptionist per branch; password from `DEV_SAMPLE_PASSWORD`), ~40 fictional patients (Aadhaar encrypted with the env key, checksum-valid fictional numbers), slots via the real slot generator, appointments for yesterday/today/next 7 days in every status, ~60 past visits with vitals, diagnoses and prescriptions |
   | Static files | Initials-based avatar images and placeholder hospital images — no real photos |
 - In the `local` profile the UI shows a **"SAMPLE DATA"** banner.
 
@@ -736,6 +736,12 @@ Registration accepts **age** (requirement) or exact DOB. If only age: `date_of_b
 - Store: `aadhaar_enc` (AES-256-GCM, key from env), `aadhaar_hash` (HMAC-SHA256 with separate key → exact-match search + uniqueness), `aadhaar_last4`.
 - API always returns masked `XXXX-XXXX-1234`. No endpoint returns the full number in Phase 1.
 
+**As built (M7):**
+- `AadhaarCrypto`: AES-256-GCM with a fresh random 12-byte IV per value, stored as Base64(IV + ciphertext + tag) (56 characters); HMAC-SHA256 as 64 hex characters; last 4 digits in clear for display. Keys `AADHAAR_ENC_KEY` / `AADHAAR_HASH_KEY` (Base64 of 32 random bytes each): **the backend refuses to start without valid keys**, so a misconfigured server can never store numbers unprotected. *Keep both keys backed up outside the server:* losing the encryption key makes stored numbers unreadable; changing the hash key breaks search and duplicate checks for existing patients (go-live checklist).
+- Validation (`@ValidAadhaar`, and the same Verhoeff check in the browser) accepts spaces / dashes; the error message never repeats the value. Aadhaar **search** (`POST /staff/patients/search-aadhaar`) and the **duplicate check** (`POST /staff/patients/duplicates`) take the number in the request **body**, not `?aadhaar=` as first planned: URLs end up in proxy access logs and browser history. Request logging never logs bodies or query strings anyway (§12.4).
+- Edit: the stored number is never sent to the screen, so an empty Aadhaar field means "keep it"; `removeAadhaar` deletes all three columns.
+- Checked in tests: no API response and no audit entry contains the number; the database holds only ciphertext, hash and last 4.
+
 ---
 
 ## 11. REST API
@@ -812,6 +818,8 @@ As built (M6): walk-ins have their own endpoint, `POST /staff/appointments/walk-
 | GET | `/staff/patients/duplicates?mobile=&name=&aadhaar=` | R, A |
 
 As built (M6): `POST /staff/patients` takes the minimal form needed for check-in and walk-ins `{fullName, age | dateOfBirth, gender, mobile, branch?, consent}` and returns the UHID; `GET /staff/patients?mobile=` finds registered patients by mobile (walk-in desk). Both R, A for now. Aadhaar, contact fields, duplicate checks, the other search fields, profile, edit and the visit list come with M7.
+
+As built (M7): `GET /staff/patients?uhid=|mobile=|name=` (one criterion; UHID with or without dashes, mobile in any common format, name = contains, at most 50) and `POST /staff/patients/search-aadhaar {aadhaar}` (audited as `PATIENT_SEARCHED`, without the number) for R, A, D; `POST /staff/patients/duplicates {name, mobile, aadhaar, excludeId?}` → `{aadhaarMatch, similar[]}` (R, A) instead of `GET …/duplicates?…`; `GET /staff/patients/{id}` (profile + upcoming appointments, audited `PATIENT_VIEWED`) and `GET …/{id}/visits` for R, A, D; `PUT /staff/patients/{id}` (R, A) audits **field names only** (`PATIENT_UPDATED`: "address, city"), never values. Registration answers `409 AADHAAR_EXISTS` (names the existing UHID) or `409 POSSIBLE_DUPLICATE` (same mobile + similar name) unless `confirmDuplicate: true`; the screen shows the possible matches with "Use this patient" / "Open record" and "Different person — register anyway". Editing re-checks similar names only when the name or mobile changes, and keeps an estimated birth date while the age is unchanged.
 
 ### 11.6 Clinical (`DOCTOR` only)
 | Method | Path |
@@ -997,7 +1005,7 @@ The design is host-agnostic, so moving is a redeploy, not a rewrite:
 - **Images:** copy the `uploads/` folder (or switch `FileStorageService` to object storage).
 - **Domain:** point DNS (`A` / `CNAME` records) at the new server. If the domain is bought early, the URL never changes for patients.
 
-**Go-live checklist:** real `.env` on VM with strong secrets · real Turnstile keys (site key in the frontend build, secret in `.env`) and `TURNSTILE_HOSTNAME` set · `SPRING_PROFILES_ACTIVE=cloud` · Swagger disabled · bootstrap admin password changed · HTTPS verified · backup job (Data Pump export / DB backups) scheduled and a restore tested · privacy policy page live.
+**Go-live checklist:** real `.env` on VM with strong secrets · **`AADHAAR_ENC_KEY` / `AADHAAR_HASH_KEY` generated fresh and backed up outside the server** (never reuse the local ones) · real Turnstile keys (site key in the frontend build, secret in `.env`) and `TURNSTILE_HOSTNAME` set · `SPRING_PROFILES_ACTIVE=cloud` · Swagger disabled · bootstrap admin password changed · HTTPS verified · backup job (Data Pump export / DB backups) scheduled and a restore tested · privacy policy page live.
 
 ---
 
@@ -1041,7 +1049,7 @@ Each milestone ends with: working build, tests passing, demo on local, your revi
 | **M4** ✅ | Scheduling | Schedule templates, slot generation job, manual slots, block, leave, holidays, overlap validation |
 | **M5** ✅ | Booking | Public booking wizard, captcha, rate limits, confirmation, lookup/cancel; counter/phone booking; concurrency tests |
 | **M6** ✅ | Reception & dashboard | Appointment list, status workflow, check-in + patient linking, dashboard (doctor/branch/network), export. *Also built:* walk-ins, staff reschedule, "patients to call" list, end-of-day no-show job, the six reports of FR-D6 (CSV / XLSX / print), minimal patient registration (UHID) needed for check-in |
-| **M7** | Patients | Registration (Aadhaar encryption, duplicates), search, profile, visit list |
+| **M7** ✅ | Patients | Registration (Aadhaar encryption, duplicates), search, profile, visit list. *Also built:* edit with field-level audit, UHID on online / counter booking, booked-for-patient shortcut at check-in, 40 fictional sample patients |
 | **M8** | Clinical | Doctor queue, visit entry, prescriptions, medical profile, history, print prescription |
 | **M9** | Hardening & UAT | Security headers, E2E tests, performance check, accessibility pass, UAT with real data |
 | **M10** | Deployment | OCI ADB + VM, Caddy HTTPS, Vercel frontend, cloud `.env`, backups, go-live checklist |
@@ -1111,7 +1119,7 @@ The original input had 10 points. The initial review found **8 further requireme
 
 **Handled by:**
 - Public booking stores what the patient typed (name, age, gender, mobile); `patient_id` stays empty until check-in.
-- **Optional UHID field** in the booking form for returning patients. It is pre-linked only if the UHID's mobile matches the entered mobile. *(Moved to M7, when patient records exist.)*
+- **Optional UHID field** in the booking form for returning patients. It is pre-linked only if the UHID's mobile matches the entered mobile. *(Moved to M7, when patient records exist.)* *As built (M7):* online, a UHID with a different mobile is **ignored silently** (the booking is made, just not linked), so the form can't be used to learn whose number a UHID is; at the counter it is an error (`400 UHID_MISMATCH`) because staff can check with the patient. A linked booking shows the UHID on the confirmation, appears under the patient's upcoming appointments, and check-in offers that patient first.
 - **At check-in** the receptionist sees **suggested matches** (same mobile; similar name; same age ± 2), then either picks one or clicks **"Register new"** with the form pre-filled from the booking (FR-R4).
 - **Duplicate prevention** on registration: same Aadhaar → blocked; same mobile + similar name → warning (FR-PT2).
 - **Walk-ins** without a booking: register or find the patient first, then create the visit (`WALK_IN`).
@@ -1165,4 +1173,4 @@ The original input had 10 points. The initial review found **8 further requireme
 
 ---
 
-*End of document — v0.9.*
+*End of document — v0.10.*

@@ -25,7 +25,7 @@ const booking = (over: Partial<StaffAppointment> = {}): StaffAppointment => ({
 })
 const ravi: PatientSummary = {
   id: 11, uhid: 'VMH-26-000011', fullName: 'Ravi Kumar', age: 42, dateOfBirth: '1984-07-01', dobEstimated: true, gender: 'M',
-  mobile: '9876543210', registeredBranchCode: 'KDD',
+  mobile: '9876543210', registeredBranchCode: 'KDD', aadhaarMasked: null,
 }
 const checkedIn = booking({ status: 'CHECKED_IN', patientId: 11, uhid: ravi.uhid, actions: noActions })
 
@@ -92,6 +92,8 @@ describe('Appointments (reception)', () => {
     expect(await screen.findByText('Ravi Kumar checked in (token 2).')).toBeInTheDocument()
     expect(requestBody(spy, 'POST /staff/patients')).toEqual({
       fullName: 'Ravi Kumar', age: 42, dateOfBirth: null, gender: 'M', mobile: '9876543210', branch: 'KDD', consent: true,
+      aadhaar: null, altMobile: null, address: null, city: null, bloodGroup: null, emergencyName: null, emergencyPhone: null,
+      confirmDuplicate: false,
     })
     expect(requestBody(spy, 'POST /staff/appointments/7/check-in')).toEqual({ patientId: 12 })
   })

@@ -1,7 +1,9 @@
 package com.vihan.hospital.patient;
 
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,5 +21,17 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
 	List<Patient> findCandidates(@Param("mobile") String mobile, @Param("name") String name);
 
 	List<Patient> findTop20ByActiveTrueAndMobileOrderByFullName(String mobile);
+
+	Optional<Patient> findByUhidAndActiveTrue(String uhid);
+
+	/** Active or not: an Aadhaar can belong to one record only (unique index). */
+	Optional<Patient> findByAadhaarHash(String aadhaarHash);
+
+	/** Name search (FR-PT3): the text anywhere in the name, ignoring case. */
+	@Query("""
+			select p from Patient p
+			where p.active = true and upper(p.fullName) like concat('%', upper(:text), '%')
+			order by p.fullName""")
+	List<Patient> searchByName(@Param("text") String text, Pageable limit);
 
 }

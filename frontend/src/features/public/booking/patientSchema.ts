@@ -18,6 +18,7 @@ export function patientSchema(t: TFunction) {
     patientGender: z.enum(['M', 'F', 'O'], { error: t('booking.errors.gender') }),
     mobile: z.string().refine((v) => normalizeMobile(v) !== null, t('booking.errors.mobile')),
     reason: z.string().trim().max(500),
+    uhid: z.string().trim().max(20),
     consent: z.boolean().refine((v) => v, t('booking.errors.consent')),
   })
 }
@@ -26,4 +27,4 @@ export type PatientFormInput = z.input<ReturnType<typeof patientSchema>>
 export type PatientFormOutput = z.output<ReturnType<typeof patientSchema>>
 
 /** Empty form; gender has no default so the patient must choose. */
-export const emptyPatient: Partial<PatientFormInput> = { patientName: '', patientAge: '', mobile: '', reason: '', consent: false }
+export const emptyPatient: Partial<PatientFormInput> = { patientName: '', patientAge: '', mobile: '', reason: '', uhid: '', consent: false }

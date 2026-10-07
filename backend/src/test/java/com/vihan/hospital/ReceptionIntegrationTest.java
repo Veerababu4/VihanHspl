@@ -177,11 +177,11 @@ class ReceptionIntegrationTest {
 	@Test
 	void checkInLinksARegisteredPatientAndOpensAVisit() throws Exception {
 		String mobile = newMobile();
-		long appt = todayBooking(doctorId, mlg, "00:00", "Ravi Kumar", mobile);
+		long appt = todayBooking(doctorId, mlg, "00:00", "Ravi Checkintest", mobile);
 
 		mvc.perform(get("/api/staff/appointments/{id}/patient-matches", appt).header(HttpHeaders.AUTHORIZATION, desk))
 			.andExpect(jsonPath("$", hasSize(0)));
-		long patientId = registerPatient("Ravi  Kumar", mobile);
+		long patientId = registerPatient("Ravi  Checkintest", mobile);
 		mvc.perform(get("/api/staff/appointments/{id}/patient-matches", appt).header(HttpHeaders.AUTHORIZATION, desk))
 			.andExpect(jsonPath("$", hasSize(1)))
 			.andExpect(jsonPath("$[0].patient.uhid", matchesPattern("VMH-\\d{2}-\\d{6}")))

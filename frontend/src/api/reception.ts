@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { AppointmentStatus } from './booking'
 import { apiGet, apiSend } from './client'
+import type { PatientExtras } from './patients'
 
 // Reception, dashboard and reports API (backend ReceptionDtos, PatientDtos, DashboardDtos,
 // ReportTable; DESIGN.md §11.4, §11.5).
@@ -58,6 +59,8 @@ export interface PatientSummary {
   gender: 'M' | 'F' | 'O'
   mobile: string
   registeredBranchCode: string | null
+  /** "XXXX-XXXX-1234"; the full number never reaches the browser */
+  aadhaarMasked: string | null
 }
 
 export interface PatientMatch {
@@ -67,7 +70,7 @@ export interface PatientMatch {
   ageClose: boolean
 }
 
-export interface RegisterPatientInput {
+export interface RegisterPatientInput extends Partial<PatientExtras> {
   fullName: string
   age: number | null
   dateOfBirth: string | null
@@ -75,6 +78,8 @@ export interface RegisterPatientInput {
   mobile: string
   branch: string | null
   consent: boolean
+  /** the user saw the "possibly the same person" warning and chose to go on */
+  confirmDuplicate?: boolean
 }
 
 export interface AppointmentFilters {

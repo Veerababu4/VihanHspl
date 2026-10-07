@@ -258,7 +258,11 @@ function AppointmentRow({
         <div className="mt-1 flex flex-wrap gap-1">
           <Badge tone={statusTone[a.status]}>{t(`status.statusLabel.${a.status}`)}</Badge>
           <Badge>{t(`staff.channels.${a.channel}`)}</Badge>
-          {a.uhid && <Badge tone="good">{t('staff.appointments.linked', { uhid: a.uhid })}</Badge>}
+          {a.uhid && a.patientId && (
+            <Link to={`/staff/patients/${a.patientId}`} className="rounded-full hover:ring-2 hover:ring-emerald-300">
+              <Badge tone="good">{t('staff.appointments.linked', { uhid: a.uhid })}</Badge>
+            </Link>
+          )}
           {a.needsAction && <Badge tone="warn">{t('staff.appointments.needsAction')}</Badge>}
           {a.frequentNoShow && <Badge tone="bad">{t('staff.appointments.frequentNoShow')}</Badge>}
         </div>

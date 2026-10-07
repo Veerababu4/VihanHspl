@@ -54,6 +54,10 @@ copy .env.example .env     # then edit .env: DB_PASSWORD = <app-password>, and f
 `.env` is git-ignored. Every secret and environment-specific value lives there. Moving to the cloud
 database later means changing `.env` only (DESIGN.md §13).
 
+`AADHAAR_ENC_KEY` and `AADHAAR_HASH_KEY` are required (the backend won't start without them). Make each
+one with PowerShell: `[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))`.
+Keep a safe copy: stored Aadhaar numbers can't be read without the first key.
+
 ## 3. Run
 
 ```powershell
@@ -98,6 +102,16 @@ The website shows a yellow **SAMPLE DATA** banner while sample data is in use.
 - Bookings nobody checked in become `NO_SHOW` at 23:55 IST (and at startup for earlier days).
 - Doctors (`doctor001` …) see only their own appointments and figures, and complete their checked-in visits.
 
+## Patients (local)
+
+- http://localhost:5173/staff/patients — search by name, mobile, UHID or Aadhaar; register a patient
+  (Aadhaar optional, stored encrypted, only ever shown as `XXXX-XXXX-1234`); profile with upcoming
+  appointments and visits; reception / IT Admin can edit. Every profile view, edit and Aadhaar search is
+  in the audit log.
+- Same Aadhaar twice is refused; same mobile with a similar name shows the existing record first.
+- The local profile adds 40 **fictional** sample patients (fictional, checksum-valid Aadhaar numbers).
+- Online and counter booking accept an optional UHID; the booking is linked when the mobile matches.
+
 ## Staff portal logins (local)
 
 Open http://localhost:5173/staff/login.
@@ -135,7 +149,8 @@ backend/
     audit/       audit log (write + IT Admin viewer)
     appointment/ booking, lookup, cancel, reschedule, counter booking, free-slot queries;
                  reception list, check-in, status changes, walk-ins, end-of-day no-show job
-    patient/     registration with UHID (minimal in M6; full patient module in M7)
+    patient/     registration with UHID, Aadhaar (Verhoeff check, AES-GCM + HMAC), duplicates, search,
+                 profile, edit, visit list; local fictional sample patients
     visit/       visits opened at check-in (clinical entry in M8)
     dashboard/   day counts network → branch → doctor, export
     report/      reports (SQL) + CSV / XLSX writer

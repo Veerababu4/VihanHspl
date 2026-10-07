@@ -66,6 +66,7 @@ export function CounterBookingPage() {
         patientGender: v.patientGender,
         mobile: normalizeMobile(v.mobile) ?? v.mobile,
         reason: v.reason || null,
+        uhid: v.uhid || null,
         consent: v.consent,
       })
       await queryClient.invalidateQueries({ queryKey: ['slots'] })

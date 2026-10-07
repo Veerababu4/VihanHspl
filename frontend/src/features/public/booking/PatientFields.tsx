@@ -45,6 +45,11 @@ export function PatientFields({
         </Field>
       </div>
       <div className="sm:col-span-2">
+        <Field label={t('booking.uhid')} error={errors.uhid?.message} hint={t('booking.uhidHint')}>
+          {(a) => <input {...a} {...form.register('uhid')} autoComplete="off" autoCapitalize="characters" className={inputClass} />}
+        </Field>
+      </div>
+      <div className="sm:col-span-2">
         <Field label={t('booking.reason')} error={errors.reason?.message}>
           {(a) => <textarea {...a} {...form.register('reason')} rows={2} maxLength={500} className={inputClass} />}
         </Field>

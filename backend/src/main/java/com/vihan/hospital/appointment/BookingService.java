@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Locale;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,8 @@ import com.vihan.hospital.doctor.DoctorRepository;
 import com.vihan.hospital.notification.NotificationService.Event;
 import com.vihan.hospital.notification.NotificationService.Message;
 import com.vihan.hospital.notification.Notifications;
+import com.vihan.hospital.patient.Patient;
+import com.vihan.hospital.patient.PatientService;
 import com.vihan.hospital.schedule.Slot;
 import com.vihan.hospital.schedule.SlotReconciler;
 import com.vihan.hospital.schedule.SlotRepository;
@@ -58,10 +61,11 @@ public class BookingService {
 	private final Notifications notifications;
 	private final Clock clock;
 	private final AppProperties.Booking rules;
+	private final PatientService patients;
 
 	public BookingService(AppointmentRepository appointments, SlotRepository slots, DoctorRepository doctors,
 			BranchRepository branches, SlotReconciler reconciler, AuditService audit, Notifications notifications,
-			Clock clock, AppProperties props) {
+			Clock clock, AppProperties props, PatientService patients) {
 		this.appointments = appointments;
 		this.slots = slots;
 		this.doctors = doctors;
@@ -71,34 +75,58 @@ public class BookingService {
 		this.notifications = notifications;
 		this.clock = clock;
 		this.rules = props.booking();
+		this.patients = patients;
 	}
 
 	// ---- booking ----
 
-	/** Online booking (FR-B1, FR-B4). The captcha and IP rate limit are checked before this is called. */
+	/**
+	 * Online booking (FR-B1, FR-B4). The captcha and IP rate limit are checked before this is called.
+	 * A UHID whose patient has a different mobile is ignored without saying so, so the form can't be
+	 * used to find out whose number a UHID is (DESIGN.md §19.5).
+	 */
 	@Transactional
 	public AppointmentView bookOnline(BookingRequest req, String clientIp) {
 		PatientDetails patient = patient(req.patientName(), req.patientAge(), req.patientGender(), req.mobile(), req.reason());
+		Long patientId = linkedPatient(req.uhid(), patient.mobile()).orElse(null);
 		Slot slot = bookableSlot(req.slotId(), true);
 		checkMobileLimit(patient.mobile(), slot.getSlotDate(), null);
-		return book(slot, patient, Channel.ONLINE, clientIp);
+		return book(slot, patient, Channel.ONLINE, clientIp, patientId);
 	}
 
-	/** Counter / phone booking by reception (FR-R3): no booking window or per-mobile limit. */
+	/**
+	 * Counter / phone booking by reception (FR-R3): no booking window or per-mobile limit. Reception
+	 * may book for a registered patient by UHID; a UHID with another mobile is an error here.
+	 */
 	@Transactional
 	public AppointmentView bookByStaff(StaffBookingRequest req) {
 		PatientDetails patient = patient(req.patientName(), req.patientAge(), req.patientGender(), req.mobile(), req.reason());
+		Long patientId = null;
+		if (req.uhid() != null && !req.uhid().isBlank()) {
+			patientId = linkedPatient(req.uhid(), patient.mobile()).orElseThrow(() -> new BadRequestException("UHID_MISMATCH",
+					"No registered patient with this UHID and mobile number. Check both, or leave the UHID empty."));
+		}
 		Slot slot = bookableSlot(req.slotId(), false);
-		return book(slot, patient, Channel.valueOf(req.channel()), null);
+		return book(slot, patient, Channel.valueOf(req.channel()), null, patientId);
 	}
 
-	private AppointmentView book(Slot slot, PatientDetails patient, Channel channel, String clientIp) {
+	private Optional<Long> linkedPatient(String uhid, String mobile) {
+		if (uhid == null || uhid.isBlank()) {
+			return Optional.empty();
+		}
+		return patients.byUhid(uhid).filter(p -> p.getMobile().equals(mobile)).map(Patient::getId);
+	}
+
+	private AppointmentView book(Slot slot, PatientDetails patient, Channel channel, String clientIp, Long patientId) {
 		if (slots.bookIfOpen(slot.getId()) == 0) {
 			throw slotTaken();
 		}
 		LocalDateTime now = LocalDateTime.now(clock);
-		Appointment a = appointments.saveAndFlush(
-				Appointment.book(newBookingRef(now.toLocalDate()), slot, patient, channel, clientIp, now));
+		Appointment booked = Appointment.book(newBookingRef(now.toLocalDate()), slot, patient, channel, clientIp, now);
+		if (patientId != null) {
+			booked.linkPatient(patientId);
+		}
+		Appointment a = appointments.saveAndFlush(booked);
 		audit.record(AuditAction.APPOINTMENT_BOOKED, "APPOINTMENT", a.getId(), "channel=" + channel);
 		AppointmentView view = view(a, slot);
 		notifications.afterCommit(message(Event.BOOKED, a, view));
@@ -305,7 +333,7 @@ public class BookingService {
 				new BranchInfo(b.getCode(), b.getName(), b.getCity(), b.getAddress(), b.getPhone()),
 				a.getPatientName(), a.getPatientAge(), a.getPatientGender(), Masking.mobile(a.getPatientMobile()),
 				a.getReason(), a.getChannel(), a.getRescheduleCount(), left, canChange, canChange && left > 0, deadline,
-				a.isNeedsAction(), a.getCancelReason());
+				a.isNeedsAction(), a.getCancelReason(), a.getPatientId() == null ? null : patients.uhidOf(a.getPatientId()));
 	}
 
 	private static Message message(Event event, Appointment a, AppointmentView v) {

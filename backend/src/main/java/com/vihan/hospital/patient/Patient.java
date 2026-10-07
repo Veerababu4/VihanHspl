@@ -15,7 +15,7 @@ import com.vihan.hospital.common.entity.AuditableEntity;
 
 /**
  * A registered patient with a network-wide UHID (DESIGN.md §9.3, FR-PT1). M6 registers the core
- * fields needed for check-in; M7 adds Aadhaar (encrypted), contact details, search and editing.
+ * fields; M7 adds Aadhaar (encrypted, §10.7), contact details, search and editing.
  */
 @Entity
 @Table(name = "patient")
@@ -45,6 +45,34 @@ public class Patient extends AuditableEntity {
 	@Column(nullable = false, length = 10)
 	private String mobile;
 
+	@Column(name = "alt_mobile", length = 10)
+	private String altMobile;
+
+	/** AES-256-GCM, see {@link AadhaarCrypto}. Never returned by the API. */
+	@Column(name = "aadhaar_enc", length = 200)
+	private String aadhaarEnc;
+
+	@Column(name = "aadhaar_hash", length = 64)
+	private String aadhaarHash;
+
+	@Column(name = "aadhaar_last4", length = 4)
+	private String aadhaarLast4;
+
+	@Column(length = 400)
+	private String address;
+
+	@Column(length = 60)
+	private String city;
+
+	@Column(name = "blood_group", length = 5)
+	private String bloodGroup;
+
+	@Column(name = "emergency_name", length = 120)
+	private String emergencyName;
+
+	@Column(name = "emergency_phone", length = 10)
+	private String emergencyPhone;
+
 	@Column(name = "registered_branch_id", nullable = false)
 	private Long registeredBranchId;
 
@@ -67,6 +95,32 @@ public class Patient extends AuditableEntity {
 		this.mobile = mobile;
 		this.registeredBranchId = registeredBranchId;
 		this.consentAt = consentAt;
+	}
+
+	/** Core details (FR-PT5); the registered branch and UHID never change. */
+	public void updateCore(String fullName, LocalDate dateOfBirth, boolean dobEstimated, String gender, String mobile) {
+		this.fullName = fullName;
+		this.dateOfBirth = dateOfBirth;
+		this.dobEstimated = dobEstimated;
+		this.gender = gender;
+		this.mobile = mobile;
+	}
+
+	public void updateContact(String altMobile, String address, String city, String bloodGroup, String emergencyName,
+			String emergencyPhone) {
+		this.altMobile = altMobile;
+		this.address = address;
+		this.city = city;
+		this.bloodGroup = bloodGroup;
+		this.emergencyName = emergencyName;
+		this.emergencyPhone = emergencyPhone;
+	}
+
+	/** All three Aadhaar columns change together; nulls remove the number. */
+	public void setAadhaar(String encrypted, String hash, String last4) {
+		this.aadhaarEnc = encrypted;
+		this.aadhaarHash = hash;
+		this.aadhaarLast4 = last4;
 	}
 
 	/** Age is always computed, so it stays right over the years (DESIGN.md §10.6). */
@@ -108,6 +162,42 @@ public class Patient extends AuditableEntity {
 
 	public boolean isActive() {
 		return active;
+	}
+
+	public String getAltMobile() {
+		return altMobile;
+	}
+
+	public String getAadhaarHash() {
+		return aadhaarHash;
+	}
+
+	public String getAadhaarLast4() {
+		return aadhaarLast4;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public String getBloodGroup() {
+		return bloodGroup;
+	}
+
+	public String getEmergencyName() {
+		return emergencyName;
+	}
+
+	public String getEmergencyPhone() {
+		return emergencyPhone;
+	}
+
+	public LocalDateTime getConsentAt() {
+		return consentAt;
 	}
 
 }

@@ -34,10 +34,11 @@ interface NavItem {
   roles: Role[]
 }
 
-// Later milestones add patients and the doctor's queue here (DESIGN.md §6).
+// M8 adds the doctor's queue here (DESIGN.md §6).
 const NAV: NavItem[] = [
   { to: '/staff/dashboard', key: 'staff.nav.dashboard', roles: ['DOCTOR', 'RECEPTIONIST', 'IT_ADMIN'] },
   { to: '/staff/appointments', key: 'staff.nav.appointments', roles: ['DOCTOR', 'RECEPTIONIST', 'IT_ADMIN'] },
+  { to: '/staff/patients', key: 'staff.nav.patients', roles: ['DOCTOR', 'RECEPTIONIST', 'IT_ADMIN'] },
   { to: '/staff/book', key: 'staff.nav.newBooking', roles: ['RECEPTIONIST', 'IT_ADMIN'] },
   { to: '/staff/reports', key: 'staff.nav.reports', roles: ['RECEPTIONIST', 'IT_ADMIN'] },
   { to: '/staff/schedule', key: 'staff.nav.schedule', roles: ['DOCTOR', 'IT_ADMIN'] },
