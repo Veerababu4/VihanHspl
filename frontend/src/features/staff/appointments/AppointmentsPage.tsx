@@ -223,6 +223,9 @@ function AppointmentRow({
   onAction: (kind: RowAction) => void
 }) {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  // A doctor records and completes the visit on the visit screen (M8), not with a bare "Complete".
+  const visitLink = user?.role === 'DOCTOR' && a.visitId != null && a.doctorId === user.doctorId
   const time = a.startAt ? formatTime(timeOf(a.startAt)) : t('staff.appointments.walkInTime')
   const buttons: { kind: RowAction; variant: 'primary' | 'secondary' | 'danger' }[] = [
     { kind: 'checkIn', variant: 'primary' },
@@ -276,8 +279,13 @@ function AppointmentRow({
         {a.reason && <p className="mt-1 text-slate-600">{a.reason}</p>}
       </div>
       <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+        {visitLink && (
+          <Link to={`/staff/visits/${a.visitId}`} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
+            {t('staff.appointments.openVisit')}
+          </Link>
+        )}
         {buttons
-          .filter((b) => a.actions[b.kind])
+          .filter((b) => a.actions[b.kind] && !(visitLink && b.kind === 'complete'))
           .map((b) => (
             <Button key={b.kind} variant={b.variant} onClick={() => onAction(b.kind)}>
               {t(`staff.appointments.${b.kind}`)}

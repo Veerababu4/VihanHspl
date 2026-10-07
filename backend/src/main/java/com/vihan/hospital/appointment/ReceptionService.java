@@ -267,6 +267,8 @@ public class ReceptionService {
 		Map<Long, String> uhids = patients.findAllById(patientIds).stream()
 			.collect(Collectors.toMap(Patient::getId, Patient::getUhid));
 		Set<String> frequent = frequentNoShows(list.stream().map(Appointment::getPatientMobile).distinct().toList(), today);
+		Map<Long, Long> visitIds = visits.findByAppointmentIdIn(list.stream().map(Appointment::getId).toList()).stream()
+			.collect(Collectors.toMap(Visit::getAppointmentId, Visit::getId));
 
 		List<StaffAppointmentRow> rows = new ArrayList<>(list.size());
 		for (Appointment a : list) {
@@ -278,7 +280,7 @@ public class ReceptionService {
 					b == null ? null : b.getCity(), a.getPatientId(), uhids.get(a.getPatientId()), a.getPatientName(),
 					a.getPatientAge(), a.getPatientGender(), a.getPatientMobile(), frequent.contains(a.getPatientMobile()),
 					a.getReason(), a.getChannel(), a.isNeedsAction(), a.getCancelReason(), a.getCancelledBy(),
-					a.getRescheduleCount(), a.getCheckedInAt(), actions(a, who, today, now)));
+					a.getRescheduleCount(), a.getCheckedInAt(), visitIds.get(a.getId()), actions(a, who, today, now)));
 		}
 		return rows;
 	}

@@ -19,7 +19,7 @@ const booking = (over: Partial<StaffAppointment> = {}): StaffAppointment => ({
   doctorId: 12, doctorName: 'Dr. Haritha Kommu', speciality: 'ENT', branchCode: 'KDD', branchCity: 'Kodad',
   patientId: null, uhid: null, patientName: 'Ravi Kumar', patientAge: 42, patientGender: 'M', mobile: '9876543210',
   frequentNoShow: false, reason: 'Ear pain', channel: 'ONLINE', needsAction: false, cancelReason: null, cancelledBy: null,
-  rescheduleCount: 0, checkedInAt: null,
+  rescheduleCount: 0, checkedInAt: null, visitId: null,
   actions: { ...noActions, checkIn: true, cancel: true, reschedule: true },
   ...over,
 })

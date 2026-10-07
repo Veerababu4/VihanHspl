@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Version** | 0.10 — M7 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3 · v0.9: M6 reception, dashboard, reports §10.4–10.6, §11.4 · v0.10: M7 patients, Aadhaar §10.7, §11.5) |
+| **Version** | 0.11 — M8 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3 · v0.9: M6 reception, dashboard, reports §10.4–10.6, §11.4 · v0.10: M7 patients, Aadhaar §10.7, §11.5 · v0.11: M8 clinical §11.6) |
 | **Date** | 2026-10-07 |
 | **Owner** | Veera |
-| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → M4 ✅ → M5 ✅ → M6 ✅ → **M7 patients complete (2026-10-07)** → M8 next |
+| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → M4 ✅ → M5 ✅ → M6 ✅ → M7 ✅ → **M8 clinical complete (2026-10-07)** → M9 next |
 
 > **How to review:** Read sections 1–6 for *what* we are building, 7–12 for *how*, and 13–16 for setup/deployment/plan.
 > **Section 19 explains how the 8 additional requirements found during the initial review are handled.**
@@ -624,7 +624,7 @@ CREATE INDEX ix_audit_time ON audit_log (created_at);
   | Source | Data |
   |---|---|
   | SQL (`db/dev-data/R__dev_sample_data.sql`) ✅ M1 | 20 **fictional** doctors (`SAMPLE-001…020`, every speciality covered, 5 serving 2–3 branches), doctor↔branch mappings, 162 weekly sessions (10:00–14:00, some 17:00–19:00, 20-min slots, no cross-branch overlaps) |
-  | Java `LocalDataSeeder` (needs app crypto; each part is built in the milestone that adds its code: users M3 ✅, slots M4, appointments M5, patients M7 ✅ (`SamplePatientSeeder`: 40 fictional patients, recognised by Aadhaar hash so each is created only once), visits M8) | Staff users with BCrypt passwords (1 IT Admin, doctor logins, 1 receptionist per branch; password from `DEV_SAMPLE_PASSWORD`), ~40 fictional patients (Aadhaar encrypted with the env key, checksum-valid fictional numbers), slots via the real slot generator, appointments for yesterday/today/next 7 days in every status, ~60 past visits with vitals, diagnoses and prescriptions |
+  | Java `LocalDataSeeder` (needs app crypto; each part is built in the milestone that adds its code: users M3 ✅, slots M4, appointments M5, patients M7 ✅ (`SamplePatientSeeder`: 40 fictional patients, recognised by Aadhaar hash so each is created only once), visits M8 ✅ (about 60 completed past visits with vitals, a diagnosis and a prescription, plus some medical profiles)) | Staff users with BCrypt passwords (1 IT Admin, doctor logins, 1 receptionist per branch; password from `DEV_SAMPLE_PASSWORD`), ~40 fictional patients (Aadhaar encrypted with the env key, checksum-valid fictional numbers), slots via the real slot generator, appointments for yesterday/today/next 7 days in every status, ~60 past visits with vitals, diagnoses and prescriptions |
   | Static files | Initials-based avatar images and placeholder hospital images — no real photos |
 - In the `local` profile the UI shows a **"SAMPLE DATA"** banner.
 
@@ -830,6 +830,16 @@ As built (M7): `GET /staff/patients?uhid=|mobile=|name=` (one criterion; UHID wi
 | GET / PUT | `/clinical/visits/{id}` (vitals, diagnosis, notes…) |
 | PUT | `/clinical/visits/{id}/prescription` (replace items) |
 | POST | `/clinical/visits/{id}/complete` |
+
+As built (M8):
+- **Two locks:** `/api/clinical/**` is `DOCTOR`-only in `SecurityConfig` *and* on the controller (`@PreAuthorize`); clinical DTOs live in their own package (`ClinicalDtos`), so reception / IT Admin APIs can't return a clinical field by accident. Reception's visit list (§11.5) stays date / branch / doctor / type / status.
+- **Prescription saved with the visit:** `PUT /clinical/visits/{id}` takes the clinical fields *and* `prescription: [...]` (replaces all lines) in one transaction; there is no separate `/prescription` endpoint, so notes and medicines can't get out of step. Vitals have sanity ranges (BP 50–300 / 30–200, pulse 20–250, 90–110 °F, SpO₂ 50–100, weight 0.5–300 kg, height 30–250 cm); every field is optional; a follow-up date must be after the visit.
+- **Who may write:** only the treating doctor, and only while the visit is `OPEN` (`403` / `409 VISIT_COMPLETED`). `POST …/complete` closes the visit and its appointment (`CHECKED_IN → COMPLETED`). Any doctor may **read** any visit and history (§17 #11).
+- **Queue** (`GET /clinical/queue?date=`): the doctor's own `CHECKED_IN` and `COMPLETED` appointments that day at any branch, split into *waiting* (token order) and *seen*; each entry carries the visit id and an allergy flag. The screen refreshes every minute.
+- **Allergies first:** the visit screen and the queue show the allergies from the medical profile before anything is prescribed.
+- **Audit (no clinical text):** `HISTORY_VIEWED`, `VISIT_VIEWED` (when a doctor opens *another* doctor's visit; one's own visits are one's daily work), `VISIT_UPDATED` (number of medicines only), `VISIT_COMPLETED`, `MEDICAL_PROFILE_UPDATED` (field names only). Tests check that a diagnosis never appears in the audit log.
+- **Print** (`/staff/visits/{id}/print`): letterhead (hospital, branch address / phone), doctor with qualification and registration number, patient, UHID, date, vitals, complaint, diagnosis, ℞ table, advice, follow-up, signature line; the staff menus are hidden when printing, so "Save as PDF" gives a clean page.
+- From the appointment list a doctor opens the visit ("Open visit") instead of the M6 quick "Complete"; that status change stays in the API (own doctor, IT Admin) and on IT Admin's screen for clean-up.
 
 ### 11.7 Admin (`IT_ADMIN`)
 | Method | Path |
@@ -1050,7 +1060,7 @@ Each milestone ends with: working build, tests passing, demo on local, your revi
 | **M5** ✅ | Booking | Public booking wizard, captcha, rate limits, confirmation, lookup/cancel; counter/phone booking; concurrency tests |
 | **M6** ✅ | Reception & dashboard | Appointment list, status workflow, check-in + patient linking, dashboard (doctor/branch/network), export. *Also built:* walk-ins, staff reschedule, "patients to call" list, end-of-day no-show job, the six reports of FR-D6 (CSV / XLSX / print), minimal patient registration (UHID) needed for check-in |
 | **M7** ✅ | Patients | Registration (Aadhaar encryption, duplicates), search, profile, visit list. *Also built:* edit with field-level audit, UHID on online / counter booking, booked-for-patient shortcut at check-in, 40 fictional sample patients |
-| **M8** | Clinical | Doctor queue, visit entry, prescriptions, medical profile, history, print prescription |
+| **M8** ✅ | Clinical | Doctor queue, visit entry, prescriptions, medical profile, history, print prescription. *Also built:* allergy warnings in the queue and on the visit, "Open visit" from the appointment list, sample past visits |
 | **M9** | Hardening & UAT | Security headers, E2E tests, performance check, accessibility pass, UAT with real data |
 | **M10** | Deployment | OCI ADB + VM, Caddy HTTPS, Vercel frontend, cloud `.env`, backups, go-live checklist |
 
@@ -1173,4 +1183,4 @@ The original input had 10 points. The initial review found **8 further requireme
 
 ---
 
-*End of document — v0.10.*
+*End of document — v0.11.*

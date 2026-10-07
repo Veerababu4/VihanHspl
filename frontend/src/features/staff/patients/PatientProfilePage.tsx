@@ -63,11 +63,15 @@ export function PatientProfilePage() {
       <PageHeader
         title={p.fullName}
         actions={
-          desk && (
+          desk ? (
             <Button variant="secondary" onClick={() => { setSaved(false); setEditing(true) }}>
               {t('staff.patients.edit')}
             </Button>
-          )
+          ) : user?.role === 'DOCTOR' ? (
+            <Link to={`/staff/patients/${p.id}/history`} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
+              {t('staff.patients.historyLink')}
+            </Link>
+          ) : null
         }
       />
       {saved && (

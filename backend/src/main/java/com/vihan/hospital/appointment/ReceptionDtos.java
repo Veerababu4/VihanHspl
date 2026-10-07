@@ -22,13 +22,14 @@ public final class ReceptionDtos {
 	 * One appointment as staff see it: full mobile number (unlike the patient's own view).
 	 *
 	 * @param frequentNoShow this mobile missed 3 or more appointments in the last 30 days
+	 * @param visitId        the visit opened at check-in (the doctor opens it from the list)
 	 */
 	public record StaffAppointmentRow(Long id, String bookingRef, Appointment.Status status, Integer tokenNo,
 			LocalDate date, LocalDateTime startAt, Long doctorId, String doctorName, String speciality, String branchCode,
 			String branchCity, Long patientId, String uhid, String patientName, Integer patientAge, String patientGender,
 			String mobile, boolean frequentNoShow, String reason, Appointment.Channel channel, boolean needsAction,
 			String cancelReason, Appointment.CancelledBy cancelledBy, int rescheduleCount, LocalDateTime checkedInAt,
-			Actions actions) {
+			Long visitId, Actions actions) {
 	}
 
 	/** Check-in has its own endpoint, because it needs a patient. */

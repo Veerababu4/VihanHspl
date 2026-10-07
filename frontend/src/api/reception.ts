@@ -46,6 +46,8 @@ export interface StaffAppointment {
   cancelledBy: 'PATIENT' | 'STAFF' | null
   rescheduleCount: number
   checkedInAt: string | null
+  /** the visit opened at check-in; the doctor opens it from the list */
+  visitId: number | null
   actions: Actions
 }
 

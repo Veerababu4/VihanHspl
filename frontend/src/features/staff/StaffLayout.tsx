@@ -34,9 +34,10 @@ interface NavItem {
   roles: Role[]
 }
 
-// M8 adds the doctor's queue here (DESIGN.md §6).
+// Menu per role (DESIGN.md §6).
 const NAV: NavItem[] = [
   { to: '/staff/dashboard', key: 'staff.nav.dashboard', roles: ['DOCTOR', 'RECEPTIONIST', 'IT_ADMIN'] },
+  { to: '/staff/queue', key: 'staff.nav.queue', roles: ['DOCTOR'] },
   { to: '/staff/appointments', key: 'staff.nav.appointments', roles: ['DOCTOR', 'RECEPTIONIST', 'IT_ADMIN'] },
   { to: '/staff/patients', key: 'staff.nav.patients', roles: ['DOCTOR', 'RECEPTIONIST', 'IT_ADMIN'] },
   { to: '/staff/book', key: 'staff.nav.newBooking', roles: ['RECEPTIONIST', 'IT_ADMIN'] },

@@ -112,6 +112,16 @@ The website shows a yellow **SAMPLE DATA** banner while sample data is in use.
 - The local profile adds 40 **fictional** sample patients (fictional, checksum-valid Aadhaar numbers).
 - Online and counter booking accept an optional UHID; the booking is linked when the mobile matches.
 
+## Clinical (doctors, local)
+
+- Log in as a doctor (e.g. `doctor006`): **My queue** lists today's checked-in patients in token order.
+  Open a visit to record vitals, complaint, diagnosis, notes, advice, follow-up and the prescription;
+  **Complete visit** closes it and the appointment. **Print prescription** gives a letterhead page (Save as PDF works).
+- **Health history** (from the patient profile or the visit) shows the medical profile and every past visit,
+  across all doctors and branches. Reception and IT Admin never see clinical details.
+- Sample patients come with about 60 fictional past visits. To get a patient into your queue, check one in
+  (or add a walk-in) as reception for that doctor today.
+
 ## Staff portal logins (local)
 
 Open http://localhost:5173/staff/login.
@@ -151,7 +161,8 @@ backend/
                  reception list, check-in, status changes, walk-ins, end-of-day no-show job
     patient/     registration with UHID, Aadhaar (Verhoeff check, AES-GCM + HMAC), duplicates, search,
                  profile, edit, visit list; local fictional sample patients
-    visit/       visits opened at check-in (clinical entry in M8)
+    visit/       visits opened at check-in or for walk-ins
+    clinical/    doctor-only: queue, visit record + prescription, medical profile, health history
     dashboard/   day counts network → branch → doctor, export
     report/      reports (SQL) + CSV / XLSX writer
     captcha/     Cloudflare Turnstile verification
