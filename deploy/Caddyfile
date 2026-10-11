@@ -1,0 +1,53 @@
+# Production web server on the Oracle Cloud VM (DESIGN.md §16). Draft, finished in M10.
+# Caddy serves the built website, proxies /api and /files to the backend on localhost,
+# and gets the HTTPS certificate automatically.
+#   SITE_DOMAIN  e.g. vihanhospital.in (or the DuckDNS name while testing)
+#   ACME_EMAIL   hospital IT email for certificate notices
+# The website headers below must match frontend/security-headers.ts (checked by its test).
+
+{
+	email {$ACME_EMAIL}
+	# If Cloudflare proxies the site (orange cloud), take the visitor IP from Cloudflare's
+	# header, but only on requests that come from Cloudflare (the rate limits use it, §12.4):
+	# servers {
+	#	trusted_proxies static <Cloudflare IP ranges from https://www.cloudflare.com/ips/>
+	#	client_ip_headers CF-Connecting-IP
+	# }
+}
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	header -Server
+
+	# Backend (listens on 127.0.0.1:8080 only, sets its own strict headers).
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /files/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /actuator/health {
+		reverse_proxy 127.0.0.1:8080   # for the uptime monitor; other actuator paths stay closed
+	}
+
+	# Website: files from `npm run build`; unknown paths get index.html (React Router).
+	handle {
+		root * /opt/vihan/site
+		header {
+			Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src https://challenges.cloudflare.com https://www.google.com https://google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+			X-Content-Type-Options "nosniff"
+			X-Frame-Options "DENY"
+			Referrer-Policy "strict-origin-when-cross-origin"
+			Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+			Cross-Origin-Opener-Policy "same-origin"
+		}
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"   # file names carry a content hash
+		@pages not path /assets/*
+		header @pages Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

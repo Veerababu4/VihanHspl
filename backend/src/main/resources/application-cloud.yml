@@ -5,6 +5,8 @@ spring:
       maximum-pool-size: 5    # Always Free ADB has a low session limit
 
 server:
+  # Only Caddy on the same VM can reach the app, so the X-Forwarded-* headers it sets can be trusted.
+  address: ${SERVER_ADDRESS:127.0.0.1}
   forward-headers-strategy: framework   # behind Caddy reverse proxy
 
 logging:

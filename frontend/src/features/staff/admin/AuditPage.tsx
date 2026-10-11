@@ -88,7 +88,7 @@ export function AuditPage() {
                 {data.items.map((e) => (
                   <tr key={e.id} className="border-b border-slate-100 align-top last:border-0">
                     <td className="px-3 py-2 whitespace-nowrap">{new Date(e.createdAt).toLocaleString('en-IN')}</td>
-                    <td className="px-3 py-2 font-mono">{e.username ?? <span className="text-slate-400">{t('staff.audit.anonymous')}</span>}</td>
+                    <td className="px-3 py-2 font-mono">{e.username ?? <span className="text-slate-500">{t('staff.audit.anonymous')}</span>}</td>
                     <td className="px-3 py-2 font-mono text-xs">{e.action}</td>
                     <td className="px-3 py-2">{e.entityType ? `${e.entityType} ${e.entityId ?? ''}` : '—'}</td>
                     <td className="px-3 py-2 text-slate-600">{e.details ?? ''}</td>

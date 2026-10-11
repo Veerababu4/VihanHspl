@@ -7,6 +7,8 @@ import { routes } from '../../../routes'
 import { layoutApi } from '../../../test/fixtures'
 import { mockApi, renderRoutes, requestBody } from '../../../test/render'
 
+const SLOW = { timeout: 15000 }   // the first render also loads the lazy staff bundle
+
 const admin: Me = { id: 1, username: 'itadmin', fullName: 'IT Admin', role: 'IT_ADMIN', doctorId: null, homeBranchId: 1, mustChangePassword: false }
 
 const doctor: AdminDoctor = {
@@ -36,7 +38,7 @@ describe('Doctor admin form', () => {
     })
     renderRoutes(routes, '/staff/admin/doctors')
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit Dr. Anitha Gundla' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Dr. Anitha Gundla' }, SLOW))
     const speciality = await screen.findByLabelText('Speciality')   // form appears once the lists have loaded
     const dialog = screen.getByRole('dialog', { name: 'Edit doctor' })
     expect(speciality).toHaveDisplayValue('Neurology')

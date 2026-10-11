@@ -8,7 +8,7 @@
   --color-brand-50: #effaf9;
   --color-brand-100: #d5f2ef;
   --color-brand-500: #14a39a;
-  --color-brand-600: #0f857e;
+  --color-brand-600: #0e7a73;   /* 5.2:1 with white text (WCAG AA needs 4.5) */
   --color-brand-700: #0f6b66;
   --color-brand-900: #0d3f3d;
   --color-accent-600: #1d5fa8;

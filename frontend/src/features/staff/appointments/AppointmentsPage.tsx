@@ -253,7 +253,7 @@ function AppointmentRow({
           </span>
         </p>
         <p className="text-sm text-slate-700">
-          <a href={`tel:${a.mobile}`} className="text-brand-700 hover:underline">
+          <a href={`tel:${a.mobile}`} className="text-brand-700 underline">
             {a.mobile}
           </a>{' '}
           · <span className="font-mono text-xs">{a.bookingRef}</span>

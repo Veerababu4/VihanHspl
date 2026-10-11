@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.vihan.hospital.config.SecurityConfig;
+
 /**
  * M1 end-to-end check on a fresh Oracle: Flyway applies V1/V2 + sample data, Hibernate validates
  * the schema, and the security / error-handling baseline behaves as designed.
@@ -52,6 +54,23 @@ class FoundationIntegrationTest {
 			.andExpect(jsonPath("$[1].code").value("HZN"))
 			.andExpect(jsonPath("$[2].code").value("KDD"))
 			.andExpect(header().exists("X-Request-Id"));
+	}
+
+	@Test
+	void apiResponsesCarrySecurityHeaders() throws Exception {
+		mvc.perform(get("/api/public/branches"))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Content-Security-Policy", SecurityConfig.API_CSP))
+			.andExpect(header().string("X-Content-Type-Options", "nosniff"))
+			.andExpect(header().string("X-Frame-Options", "DENY"))
+			.andExpect(header().string("Referrer-Policy", "no-referrer"))
+			.andExpect(header().string("Permissions-Policy", SecurityConfig.PERMISSIONS_POLICY))
+			.andExpect(header().doesNotExist("Strict-Transport-Security"));   // plain HTTP: browsers ignore it
+		mvc.perform(get("/api/public/branches").secure(true))
+			.andExpect(header().string("Strict-Transport-Security", "max-age=31536000 ; includeSubDomains"));
+		mvc.perform(get("/api/staff/dashboard/summary"))   // error answers too
+			.andExpect(status().isUnauthorized())
+			.andExpect(header().string("Content-Security-Policy", SecurityConfig.API_CSP));
 	}
 
 	@Test

@@ -96,9 +96,10 @@ function Showcase() {
 
 function Stat({ label, value }: { label: string; value?: number }) {
   return (
-    <div className="rounded-xl bg-white/10 p-4">
-      <dd className="text-3xl font-bold">{value ?? '–'}</dd>
+    <div className="flex flex-col-reverse rounded-xl bg-white/10 p-4">
+      {/* <dt> must come first for screen readers; flex-col-reverse still shows the number on top */}
       <dt className="text-sm text-white/80">{label}</dt>
+      <dd className="text-3xl font-bold">{value ?? '–'}</dd>
     </div>
   )
 }

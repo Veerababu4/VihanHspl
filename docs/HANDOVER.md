@@ -1,6 +1,6 @@
 # Handover — Vihan Multi Speciality Hospital, Phase 1
 
-*Written 2026-10-11, to resume the work in a future session. Start here, then read `docs/DESIGN.md` (v0.11) and `README.md`.*
+*Updated 2026-10-12 (M9 paused mid-way). Start here, then read `docs/DESIGN.md` (v0.12) and `README.md`.*
 
 ## 1. Where things stand
 
@@ -14,11 +14,11 @@
 | M6 Reception & dashboard (check-in, walk-ins, reports) | ✅ done | `153129e` |
 | M7 Patients (Aadhaar encryption, duplicates, search, profile) | ✅ done | `aaf2e28` |
 | M8 Clinical (doctor queue, visit, prescription, history, print) | ✅ done | `80aec9a` |
-| **M9 Hardening & UAT** | **next** | — |
+| **M9 Hardening & UAT** | **in progress** (work-in-progress commit, see §4) | — |
 | M10 Deployment | after M9 | — |
 
-- Branch `main`, working tree clean at the time of writing. **No git remote yet**: the code exists only on this laptop. The user will push it to a private GitHub repo themselves (`! gh auth login`).
-- Last verified: backend 176 tests, frontend 58 tests, oxlint and typecheck clean, Edge browser checks passed (including phone widths).
+- Branch `main`, pushed to the **private** GitHub repo `https://github.com/Veerababu4/VihanHspl.git` (`origin`). Pre-push audit (2026-10-11): no secrets in any commit; real `.env` files are git-ignored.
+- Last verified: M8 = backend 176 tests, frontend 58. 2026-10-12 (M9 WIP): frontend unit 60/60, E2E 5/5, perf check passed, typecheck + lint clean; full backend run still to do.
 - Database migrations applied: `V1__schema` … `V4__reception` (plus the repeatable local sample data).
 
 ## 2. How to start everything (local)
@@ -50,7 +50,25 @@ cd frontend; npm test; npm run lint; npm run typecheck; npm run build
 
 Browser checks use `playwright-core` driving the installed Edge. The scripts are in the old session scratchpads under `C:\Users\Veera\AppData\Local\Temp\claude\C--Veera-Work\` (`c6661b5d…\scratchpad\pw`: booking.js, sched.js, overflow.js, staff.js; later ones: reception.js, patients.js, clinical.js).
 
-## 4. Next: M9 Hardening & UAT (DESIGN §18)
+## 4. Now: M9 Hardening & UAT (DESIGN §18)
+
+**Done (2026-10-11/12):**
+- DESIGN v0.12 §16: free hosting = Oracle Cloud Always Free (Hyderabad), Caddy serves site + `/api` on one VM, idle-reclamation safeguards. *The user could not create an OCI account yet*; fallback offered: a ~₹400–800/month 4 GB VPS with the same setup (no code change), or a hospital PC + Cloudflare Tunnel. Decide in M10.
+- Security headers: backend `SecurityConfig` (`API_CSP`, Referrer/Permissions-Policy, HSTS), tested in `FoundationIntegrationTest`. Website headers in `frontend/security-headers.ts` (used by `vite preview`) and `deploy/Caddyfile` (draft); `security-headers.test.ts` keeps them identical. Zod `jitless` (CSP has no eval). Vite proxy `changeOrigin: false` (same-origin like Caddy). Cloud profile binds the backend to 127.0.0.1.
+- E2E suite `frontend/e2e` (`npm run e2e`, installed Edge, builds + previews on :4173, needs backend + Docker): public pages, booking → find → reschedule → cancel, phone widths, walk-in → doctor completes → dashboard count, reception kept out of clinical. 5/5 pass. Every test fails on a CSP violation or browser error.
+- Performance: `PerformanceCheckTest` (`@Tag("perf")`, excluded from `mvnw test`; run `.mvnw test -Dgroups=perf -Dperf.excluded=`) loads a year of data into the throwaway test DB (30k patients, 178k slots, 140k appointments, 112k visits, 224k prescription lines, 300k audit rows). **All 20 heavy calls under 0.5 s** (slowest: 31-day daily register 0.49 s / 1.4 MB, audit log first page 0.35 s). No index changes needed.
+- Accessibility: `frontend/e2e/a11y.spec.ts` (axe-core, WCAG 2.1 AA). Fixed: brand-600 darkened to `#0e7a73` (contrast 5.2:1), slate-400 → slate-500, login `<dl>` order, underlined phone link. Staff and doctor screens pass.
+- `docs/UAT-CHECKLIST.md` for hospital staff (v1).
+- Test DB container: 5 min start-up timeout + 2 attempts. DoctorsAdminPage test: 15 s first wait.
+
+**Remaining M9 (next session):**
+1. a11y: booking step "date & time" still fails: `.text-white/80` contrast (selected date chip) and a `<dl>` with wrong children (booking summary, `BookingPage.tsx` ~line 250). After that the public test stops early (`waitForLoadState: Test ended`) — re-run and check the later booking steps.
+2. Modal focus trap (Tab must stay inside dialogs; `components/ui.tsx` `Modal`) + a keyboard E2E test.
+3. Full `.mvnw test` run (last full run was before M9; header + timeout changes verified only on FoundationIntegrationTest) and full `npm run e2e`.
+4. DESIGN.md v0.13 as-built notes (§12.4 headers, §15 E2E/perf/a11y, §18 M9 ✅), README (e2e, perf, preview), this file.
+5. Summary to the user → ask before committing M9 as done.
+
+### Original M9 plan
 
 Planned scope:
 1. **Security headers** (§12.4): CSP, HSTS, X-Content-Type-Options, frame-ancestors, Referrer-Policy. The CSP must allow `https://challenges.cloudflare.com` (script + frame) for Turnstile and Google Maps embeds (`https://www.google.com`) for branch maps. Swagger stays local-only.

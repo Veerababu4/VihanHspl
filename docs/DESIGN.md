@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Version** | 0.11 — M8 built (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3 · v0.9: M6 reception, dashboard, reports §10.4–10.6, §11.4 · v0.10: M7 patients, Aadhaar §10.7, §11.5 · v0.11: M8 clinical §11.6) |
-| **Date** | 2026-10-07 |
+| **Version** | 0.12 — free hosting plan §16 (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3 · v0.9: M6 reception, dashboard, reports §10.4–10.6, §11.4 · v0.10: M7 patients, Aadhaar §10.7, §11.5 · v0.11: M8 clinical §11.6 · v0.12: free hosting on Oracle Cloud Always Free §16) |
+| **Date** | 2026-10-11 |
 | **Owner** | Veera |
 | **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → M4 ✅ → M5 ✅ → M6 ✅ → M7 ✅ → **M8 clinical complete (2026-10-07)** → M9 next |
 
@@ -269,15 +269,15 @@ UI: mobile-first, responsive, hospital brand colours (to be confirmed — §17),
 
 ```
                     ┌─────────────────────────────────────────┐
-  Browser (mobile / │  React SPA  (Vercel / Netlify, free)    │
+  Browser (mobile / │  Caddy (OCI Always Free VM, auto HTTPS) │
   desktop)  ───────►│  /            public site               │
                     │  /staff/*     staff portal              │
-                    │  /api/*  ──► rewrite/proxy to backend   │
+                    │  React SPA files · /api/* ──► backend   │
                     └───────────────────┬─────────────────────┘
-                                        │ HTTPS (JSON, JWT)
+                                        │ localhost proxy (JSON, JWT)
                     ┌───────────────────▼─────────────────────┐
                     │  Spring Boot API  (OCI Always Free VM)  │
-                    │  Caddy reverse proxy (auto HTTPS)       │
+                    │  on localhost:8080 (same VM)            │
                     │                                         │
                     │  Controllers → Services → Repositories  │
                     │  Security (JWT, roles) · Rate limiter   │
@@ -292,7 +292,7 @@ UI: mobile-first, responsive, hospital brand colours (to be confirmed — §17),
                     └─────────────────────────────────────────┘
 ```
 
-Proxying `/api/*` through the frontend host makes the API **same-origin** for the browser → simpler CORS and allows secure first-party refresh-token cookies.
+Proxying `/api/*` through the same Caddy that serves the website makes the API **same-origin** for the browser → simpler CORS and allows secure first-party refresh-token cookies.
 
 ### Repository layout
 ```
@@ -885,7 +885,7 @@ Patient data (health records, Aadhaar) is **sensitive personal data** under Indi
 ### 12.4 Other controls
 - Public booking: Turnstile captcha, Bucket4j rate limits (e.g. 10 req/min/IP on booking, 30 req/min/IP on lookups), 3 bookings/mobile/day.
   *As built:* limits are applied by a `HandlerInterceptor` before the request body is read (so floods of invalid requests are throttled too): booking / cancel / reschedule 10, lookup 30, slot viewing 60, **staff login 20** per minute per IP; answer `429 RATE_LIMITED` with `Retry-After`. Buckets live in memory (single server) and idle ones are dropped every 5 minutes.
-  *Deployment (M10):* the limits use the client IP, so the reverse proxy must pass the real visitor IP (Caddy behind Vercel: trust only Vercel's forwarding header), otherwise everyone shares one IP or IPs can be spoofed. *Security headers (M9):* the CSP must allow `https://challenges.cloudflare.com` (script + frame) for Turnstile.
+  *Deployment (M10):* the limits use the client IP, so the reverse proxy must pass the real visitor IP (Caddy on the VM, §16: use the connection's IP, or `CF-Connecting-IP` only for requests from Cloudflare), otherwise everyone shares one IP or IPs can be spoofed. *Security headers (M9):* the CSP must allow `https://challenges.cloudflare.com` (script + frame) for Turnstile.
   *Local development* uses Cloudflare's test keys (`1x…AA`), which accept any token; real keys are on the go-live checklist.
 - Input validation (Bean Validation + Zod on frontend). JPA parameter binding → no SQL injection.
 - File upload: max 5 MB, allow JPEG/PNG/WebP, verify magic bytes, re-encode/resize (strips EXIF), random file names.
@@ -988,22 +988,45 @@ Target: ≥ 70 % line coverage on service layer; all role-permission rules cover
 
 ## 16. Deployment (Free Hosting)
 
-| Component | Free option (recommended) | Notes |
-|---|---|---|
-| Database | **Oracle Cloud Always Free — Autonomous Database** | Download wallet or enable TLS (no wallet) + IP allow-list. Always Free ADBs are stopped after a period of inactivity — check current OCI policy; light traffic keeps it alive. |
-| Backend | **Oracle Cloud Always Free Compute VM** (Ampere A1 / AMD micro), Ubuntu, Java 21, app runs as `systemd` service | Same cloud region as DB = low latency. **Caddy** for automatic HTTPS. |
-| Frontend | **Vercel** or **Netlify** (free) → `vihan-hospital.vercel.app` | `/api/*` rewrite to backend URL |
-| Images | VM disk `/opt/vihan/uploads` (Phase 1) → OCI Object Storage later | Back up with the DB |
-| Domain | Start with free subdomains (`*.vercel.app` for site, DuckDNS or similar for API) | Later buy e.g. `vihanhospital.in` (low annual cost) for credibility |
-| CI/CD | GitHub Actions: build + test on push; manual deploy script (`scp` jar + `systemctl restart`) | |
+*Decided 2026-10-11:* run Phase 1 at **₹0/month** on **Oracle Cloud Always Free**. The domain is the only paid item (about ₹600–1,000/year). The website, API and files all sit on **one VM behind Caddy**, so the site and `/api` share one origin, which the refresh cookie (`SameSite=Strict`, §12.2) and the CSP (§12.4) rely on. *(Replaces the earlier Vercel/Netlify plan: Vercel Hobby forbids commercial use.)*
 
-> Oracle Cloud sign-up requires card verification (not charged for Always Free resources). Keep the account on Always Free only.
+| Component | Free option (chosen) | Notes |
+|---|---|---|
+| Database | **Oracle Cloud Always Free — Autonomous Database** (up to 2 DBs × 20 GB) | Managed, with automatic backups and patching. `cloud` profile; wallet in `wallet/` (git-ignored), or TLS without a wallet + IP allow-list. The app schema user is not `ADMIN` (§12.4). |
+| Backend | **Always Free Ampere A1 VM** (start with 2 OCPU / 12 GB; the free limit is 4 OCPU / 24 GB in total), Ubuntu, Java 21, app as a `systemd` service | Same region as the DB. If creation fails with "out of host capacity", retry later or pick a smaller shape. |
+| Frontend | **Same VM: Caddy serves the `npm run build` files** | Caddy also proxies `/api/*` and `/files/*` to the backend on `localhost:8080` and gets HTTPS certificates automatically (Let's Encrypt). *Fallback:* Cloudflare Pages (free, commercial use allowed) with an `/api` proxy. |
+| Images | VM disk `/opt/vihan/uploads` | Included in the backup job (§19.8). |
+| DNS / protection | **Cloudflare free plan** (DNS, DDoS protection) | The Turnstile keys come from the same account. If Cloudflare proxies the site, Caddy takes the visitor IP from `CF-Connecting-IP` only for requests from Cloudflare addresses (the rate limits use it, §12.4). |
+| Domain | **Testing:** the VM's IP or a free DuckDNS name. **Go-live:** buy a `.in` domain (e.g. `vihanhospital.in`) | Registered with a **hospital-owned email**, with 2FA on and a second admin added. |
+| Monitoring | **UptimeRobot free**: `/actuator/health` every 5 min | Alerts by email / app to the hospital's IT contact. |
+| CI/CD | GitHub Actions on the private repo `Veerababu4/VihanHspl`: build + test on push; manual deploy script (`scp` jar + `systemctl restart`) | The free minutes are enough at this size. |
+
+**Region:** India South (**Hyderabad**, `ap-hyderabad-1`) as the account's home region. It can't be changed later, and it keeps patient data in India (DPDP Act, §12.1).
+
+#### Keeping the free resources alive (Always Free idle rules)
+
+How Oracle's Always Free rules work, as understood on 2026-10-11 (re-check the OCI docs at sign-up):
+
+| Resource | Counted as idle when… | What Oracle does | Data lost? |
+|---|---|---|---|
+| Compute VM | Over 7 days, CPU (95th percentile), network **and** memory all stay below 20 % | **Stops** the VM; the boot disk is kept | No: start it again |
+| Autonomous DB | No connections for 7 days | **Stops** the DB | No, if restarted within 90 days |
+| Autonomous DB stopped for 90 days | — | **Deletes** it | **Yes** |
+| Trial resources (not marked Always Free) | The 30-day trial ends | Deleted | Yes |
+
+The backend's connection pool and nightly jobs (slot generation, the 23:55 no-show job) keep the DB active while the VM runs, so the **VM is the weak point**: a small app stays under 20 % CPU even in daily use. Safeguards (all on the go-live checklist below):
+1. **Upgrade the account to Pay As You Go.** Idle reclamation then no longer applies, and Always Free resources stay ₹0. A card is required; set a **₹100 budget alert**.
+2. **UptimeRobot alert** within 5 minutes if the site is down, so a stopped VM or DB never goes unnoticed.
+3. **Backups outside the database** (§19.8): a nightly Data Pump export + `uploads/` archive to OCI Object Storage (Always Free, 20 GB), plus a weekly copy off Oracle Cloud (hospital-owned Google Drive or a PC). Then even the 90-day deletion can't lose data. A restore is tested before go-live.
+4. **Create only resources marked "Always Free".**
+
+> Oracle Cloud sign-up needs card verification (Always Free resources are not charged). Limits: no SLA and no support. Moving to paid OCI or own hosting later is a redeploy, not a rewrite (§16.2).
 
 ### 16.1 Hosting during development (before M10)
 | Need | Option |
 |---|---|
 | Show work-in-progress to hospital staff from your PC | **Cloudflare Tunnel** (free): exposes `localhost` on a public HTTPS URL; no server needed. Use a non-production DB with sample data only. |
-| Always-on dev/demo environment | Oracle Cloud Always Free (ADB + VM) as above, plus Vercel preview URLs for each git branch |
+| Always-on dev/demo environment | Oracle Cloud Always Free (ADB + VM) as above, with sample data in a separate schema, never in the live one |
 | Why not Render / Railway / Koyeb free tiers? | No managed Oracle DB. Free web services sleep when idle (slow first request), and some offer only trial credits. Fine for the frontend, weak for an Oracle-backed API. |
 
 ### 16.2 Moving to own hosting later
@@ -1015,7 +1038,7 @@ The design is host-agnostic, so moving is a redeploy, not a rewrite:
 - **Images:** copy the `uploads/` folder (or switch `FileStorageService` to object storage).
 - **Domain:** point DNS (`A` / `CNAME` records) at the new server. If the domain is bought early, the URL never changes for patients.
 
-**Go-live checklist:** real `.env` on VM with strong secrets · **`AADHAAR_ENC_KEY` / `AADHAAR_HASH_KEY` generated fresh and backed up outside the server** (never reuse the local ones) · real Turnstile keys (site key in the frontend build, secret in `.env`) and `TURNSTILE_HOSTNAME` set · `SPRING_PROFILES_ACTIVE=cloud` · Swagger disabled · bootstrap admin password changed · HTTPS verified · backup job (Data Pump export / DB backups) scheduled and a restore tested · privacy policy page live.
+**Go-live checklist:** OCI home region Hyderabad, account on Pay As You Go with a ₹100 budget alert, only Always Free resources · UptimeRobot alert set · domain on a hospital-owned account with 2FA · real `.env` on VM with strong secrets · **`AADHAAR_ENC_KEY` / `AADHAAR_HASH_KEY` generated fresh and backed up outside the server** (never reuse the local ones) · real Turnstile keys (site key in the frontend build, secret in `.env`) and `TURNSTILE_HOSTNAME` set · `SPRING_PROFILES_ACTIVE=cloud` · Swagger disabled · bootstrap admin password changed · HTTPS verified · backup job (Data Pump export / DB backups) scheduled and a restore tested · privacy policy page live.
 
 ---
 
@@ -1040,7 +1063,7 @@ All open questions were answered by Veera on **2026-10-06**. Items marked *chang
 | 13 | Telugu language support | **Phase 2; UI built i18n-ready in Phase 1** |
 | 14 | SMS / WhatsApp confirmation | **Phase 2; `NotificationService` hook (log-only) in Phase 1** |
 | 15 | Brand: logo, colours, fonts | **Placeholder teal/blue medical palette + text logo**; swap via one theme config |
-| 16 | Domain name | **Free subdomain during development; buy domain before public launch** |
+| 16 | Domain name | **Free subdomain during development; buy domain before public launch** (2026-10-11: a hospital-owned `.in`; hosting = Oracle Cloud Always Free, §16) |
 | 17 | Branch spelling | **Miryalaguda** |
 | 18 | Lab report upload on visits | **Phase 2** |
 
@@ -1062,7 +1085,7 @@ Each milestone ends with: working build, tests passing, demo on local, your revi
 | **M7** ✅ | Patients | Registration (Aadhaar encryption, duplicates), search, profile, visit list. *Also built:* edit with field-level audit, UHID on online / counter booking, booked-for-patient shortcut at check-in, 40 fictional sample patients |
 | **M8** ✅ | Clinical | Doctor queue, visit entry, prescriptions, medical profile, history, print prescription. *Also built:* allergy warnings in the queue and on the visit, "Open visit" from the appointment list, sample past visits |
 | **M9** | Hardening & UAT | Security headers, E2E tests, performance check, accessibility pass, UAT with real data |
-| **M10** | Deployment | OCI ADB + VM, Caddy HTTPS, Vercel frontend, cloud `.env`, backups, go-live checklist |
+| **M10** | Deployment | OCI Always Free (Hyderabad): ADB + A1 VM, Caddy HTTPS serving the frontend + `/api`, cloud `.env`, Pay As You Go upgrade + budget alert, UptimeRobot, nightly backups + tested restore, go-live checklist (§16) |
 
 ---
 
@@ -1164,7 +1187,7 @@ The original input had 10 points. The initial review found **8 further requireme
 | **Telugu language** | UI text in `react-i18next` resource files (`en.json`); no hard-coded strings | Add `te.json` + Telugu names for doctors/specialities/branches |
 | **Reports & export** | Dashboard export + 6 reports in XLSX / CSV / print (FR-D6) | Scheduled email of daily report |
 | **DB backups** | Daily **Data Pump export** (`expdp`) of the app schema + `uploads/` archive, copied to OCI Object Storage, **keep 14 days**; monthly **restore test** into the local DB | Point-in-time recovery on paid tier |
-| **HTTPS** | Automatic certificates via Vercel/Netlify (frontend) and Caddy + Let's Encrypt (API); HSTS on | — |
+| **HTTPS** | Automatic certificates via Caddy + Let's Encrypt for the whole site (website, API, files on one VM, §16); HSTS on | — |
 | **Domain** | Free subdomain during development | Buy `vihanhospital.in` (or similar) before public launch; point DNS |
 | **SEO** | Page titles/meta per page (react-helmet-async), `sitemap.xml`, `robots.txt`, schema.org `Hospital` / `Physician` JSON-LD | Pre-rendering of public pages if search ranking matters |
 | **Monitoring** | Spring Boot Actuator `/actuator/health` + free uptime monitor (e.g. UptimeRobot) pinging every 5 min — also keeps Autonomous DB active | Centralised logs |

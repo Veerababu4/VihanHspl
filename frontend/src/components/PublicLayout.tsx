@@ -46,7 +46,7 @@ export function PublicLayout() {
                 {t(l.key)}
               </NavLink>
             ))}
-            <NavLink to="/staff/login" className="px-3 py-2 text-slate-400 hover:text-brand-700">
+            <NavLink to="/staff/login" className="px-3 py-2 text-slate-500 hover:text-brand-700">
               {t('nav.staffLogin')}
             </NavLink>
             <Link to="/book" className="ml-2 rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700">
@@ -84,7 +84,7 @@ export function PublicLayout() {
                 </li>
               ))}
               <li>
-                <NavLink to="/staff/login" onClick={closeMenu} className="block px-3 py-2 text-slate-400">
+                <NavLink to="/staff/login" onClick={closeMenu} className="block px-3 py-2 text-slate-500">
                   {t('nav.staffLogin')}
                 </NavLink>
               </li>

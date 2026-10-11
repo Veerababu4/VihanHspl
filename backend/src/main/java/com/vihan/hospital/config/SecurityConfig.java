@@ -22,6 +22,13 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -53,6 +60,19 @@ public class SecurityConfig {
 	/** Endpoints that work without an access token: they use the refresh cookie or the password. */
 	private static final String[] AUTH_ENTRY_PATHS = { "/api/auth/login", "/api/auth/refresh", "/api/auth/logout" };
 
+	/**
+	 * The backend only returns JSON, files and images, so its responses may load nothing and be
+	 * framed by nobody (§12.4). The website's own, wider policy is set by Caddy (deploy/Caddyfile).
+	 */
+	public static final String API_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+
+	public static final String PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
+
+	/** Swagger UI (local profile only) runs scripts, so the strict policy would break it. */
+	private static final RequestMatcher SWAGGER = new OrRequestMatcher(
+			PathPatternRequestMatcher.pathPattern("/swagger-ui/**"),
+			PathPatternRequestMatcher.pathPattern("/swagger-ui.html"));
+
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper,
 			Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter) throws Exception {
@@ -75,6 +95,13 @@ public class SecurityConfig {
 			.httpBasic(AbstractHttpConfigurer::disable)
 			.formLogin(AbstractHttpConfigurer::disable)
 			.logout(AbstractHttpConfigurer::disable)
+			// Spring's defaults stay on: nosniff, X-Frame-Options DENY, no-cache for API answers, HSTS over HTTPS.
+			.headers(h -> h
+				.addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(new NegatedRequestMatcher(SWAGGER),
+						new StaticHeadersWriter("Content-Security-Policy", API_CSP)))
+				.referrerPolicy(r -> r.policy(ReferrerPolicy.NO_REFERRER))
+				.permissionsPolicyHeader(p -> p.policy(PERMISSIONS_POLICY))
+				.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)))
 			.oauth2ResourceServer(o -> o
 				.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
 				.authenticationEntryPoint(unauthorized)      // missing / expired / forged token

@@ -21,6 +21,8 @@ backend/.mvn/wrapper/maven-wrapper.jar
 node_modules/
 frontend/dist/
 frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
 *.local
 
 # ---- IDE / OS ----
