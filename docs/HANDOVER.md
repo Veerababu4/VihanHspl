@@ -1,6 +1,6 @@
 # Handover — Vihan Multi Speciality Hospital, Phase 1
 
-*Updated 2026-10-12 (M9 paused mid-way). Start here, then read `docs/DESIGN.md` (v0.12) and `README.md`.*
+*Updated 2026-10-12 (M9 finished, waiting for the user's review and OK to commit). Start here, then read `docs/DESIGN.md` (v0.13) and `README.md`.*
 
 ## 1. Where things stand
 
@@ -14,11 +14,11 @@
 | M6 Reception & dashboard (check-in, walk-ins, reports) | ✅ done | `153129e` |
 | M7 Patients (Aadhaar encryption, duplicates, search, profile) | ✅ done | `aaf2e28` |
 | M8 Clinical (doctor queue, visit, prescription, history, print) | ✅ done | `80aec9a` |
-| **M9 Hardening & UAT** | **in progress** (work-in-progress commit, see §4) | — |
-| M10 Deployment | after M9 | — |
+| **M9 Hardening & UAT** | **done, not yet committed** (WIP commit `ee8bf2c` + the finishing changes, see §4) | — |
+| **M10 Deployment** | next (decisions open, see §5) | — |
 
 - Branch `main`, pushed to the **private** GitHub repo `https://github.com/Veerababu4/VihanHspl.git` (`origin`). Pre-push audit (2026-10-11): no secrets in any commit; real `.env` files are git-ignored.
-- Last verified: M8 = backend 176 tests, frontend 58. 2026-10-12 (M9 WIP): frontend unit 60/60, E2E 5/5, perf check passed, typecheck + lint clean; full backend run still to do.
+- Last verified 2026-10-12 (M9 finished): backend **177/177** (`mvnw test`, 2 min 38 s), frontend unit **63/63**, E2E **9/9** (`npm run e2e`, incl. 4 accessibility tests), typecheck + lint clean. Performance check passed 2026-10-11.
 - Database migrations applied: `V1__schema` … `V4__reception` (plus the repeatable local sample data).
 
 ## 2. How to start everything (local)
@@ -46,27 +46,26 @@ npm run dev
 ```powershell
 cd backend;  .\mvnw test        # ~5 min; Testcontainers starts its own Oracle (Docker must run)
 cd frontend; npm test; npm run lint; npm run typecheck; npm run build
+cd frontend; npm run e2e       # Playwright E2E + accessibility on the production build (backend + Docker must run)
 ```
 
-Browser checks use `playwright-core` driving the installed Edge. The scripts are in the old session scratchpads under `C:\Users\Veera\AppData\Local\Temp\claude\C--Veera-Work\` (`c6661b5d…\scratchpad\pw`: booking.js, sched.js, overflow.js, staff.js; later ones: reception.js, patients.js, clinical.js).
+Since M9 the committed suite `frontend/e2e` replaces the ad-hoc browser scripts. The older `playwright-core` scripts (installed Edge) are still in the old session scratchpads under `C:\Users\Veera\AppData\Local\Temp\claude\C--Veera-Work\` (`c6661b5d…\scratchpad\pw`: booking.js, sched.js, overflow.js, staff.js; later ones: reception.js, patients.js, clinical.js).
 
-## 4. Now: M9 Hardening & UAT (DESIGN §18)
+## 4. M9 Hardening & UAT (DESIGN §18)
 
 **Done (2026-10-11/12):**
 - DESIGN v0.12 §16: free hosting = Oracle Cloud Always Free (Hyderabad), Caddy serves site + `/api` on one VM, idle-reclamation safeguards. *The user could not create an OCI account yet*; fallback offered: a ~₹400–800/month 4 GB VPS with the same setup (no code change), or a hospital PC + Cloudflare Tunnel. Decide in M10.
 - Security headers: backend `SecurityConfig` (`API_CSP`, Referrer/Permissions-Policy, HSTS), tested in `FoundationIntegrationTest`. Website headers in `frontend/security-headers.ts` (used by `vite preview`) and `deploy/Caddyfile` (draft); `security-headers.test.ts` keeps them identical. Zod `jitless` (CSP has no eval). Vite proxy `changeOrigin: false` (same-origin like Caddy). Cloud profile binds the backend to 127.0.0.1.
-- E2E suite `frontend/e2e` (`npm run e2e`, installed Edge, builds + previews on :4173, needs backend + Docker): public pages, booking → find → reschedule → cancel, phone widths, walk-in → doctor completes → dashboard count, reception kept out of clinical. 5/5 pass. Every test fails on a CSP violation or browser error.
+- E2E suite `frontend/e2e` (`npm run e2e`, installed Edge, builds + previews on :4173, needs backend + Docker): public pages, booking → find → reschedule → cancel, phone widths, walk-in → doctor completes → dashboard count, reception kept out of clinical, plus the accessibility tests. 9/9 pass. Every test fails on a CSP violation or browser error.
 - Performance: `PerformanceCheckTest` (`@Tag("perf")`, excluded from `mvnw test`; run `.mvnw test -Dgroups=perf -Dperf.excluded=`) loads a year of data into the throwaway test DB (30k patients, 178k slots, 140k appointments, 112k visits, 224k prescription lines, 300k audit rows). **All 20 heavy calls under 0.5 s** (slowest: 31-day daily register 0.49 s / 1.4 MB, audit log first page 0.35 s). No index changes needed.
-- Accessibility: `frontend/e2e/a11y.spec.ts` (axe-core, WCAG 2.1 AA). Fixed: brand-600 darkened to `#0e7a73` (contrast 5.2:1), slate-400 → slate-500, login `<dl>` order, underlined phone link. Staff and doctor screens pass.
+- Accessibility: `frontend/e2e/a11y.spec.ts` (axe-core, WCAG 2.1 AA) on public pages, every booking step, staff and doctor screens, plus a keyboard test for dialogs. Fixed: brand-600 darkened to `#0e7a73` (contrast 5.2:1), slate-400 → slate-500, login `<dl>` order, underlined phone link, booking summary `<dl>` (fee line moved out), white instead of 80 % white text on selected date/time chips (booking + staff Slots tab).
+- Dialog focus: new `src/lib/dialogFocus.ts` `useDialogFocus` hook used by `Modal` (`components/ui.tsx`) and the gallery lightbox (now a `Lightbox` component): focus moves to the first field (else the dialog), Tab/Shift+Tab wrap inside, Escape closes, focus returns to the opener. `onClose` is kept in a ref, so pages passing an inline arrow no longer re-run the effect and yank focus on re-render. Unit test `src/components/Modal.test.tsx`.
 - `docs/UAT-CHECKLIST.md` for hospital staff (v1).
 - Test DB container: 5 min start-up timeout + 2 attempts. DoctorsAdminPage test: 15 s first wait.
 
-**Remaining M9 (next session):**
-1. a11y: booking step "date & time" still fails: `.text-white/80` contrast (selected date chip) and a `<dl>` with wrong children (booking summary, `BookingPage.tsx` ~line 250). After that the public test stops early (`waitForLoadState: Test ended`) — re-run and check the later booking steps.
-2. Modal focus trap (Tab must stay inside dialogs; `components/ui.tsx` `Modal`) + a keyboard E2E test.
-3. Full `.mvnw test` run (last full run was before M9; header + timeout changes verified only on FoundationIntegrationTest) and full `npm run e2e`.
-4. DESIGN.md v0.13 as-built notes (§12.4 headers, §15 E2E/perf/a11y, §18 M9 ✅), README (e2e, perf, preview), this file.
-5. Summary to the user → ask before committing M9 as done.
+**Finished 2026-10-12:** all of the above, full test runs (numbers in §1), DESIGN v0.13 (§12.4 headers, §15 E2E / accessibility / performance, §18 M9 ✅), README (E2E, performance, preview, layout).
+
+**Next:** the user reviews M9 → on their OK, commit (and ask again before any push). Then M10 (§5). Running the UAT checklist with real data moves to M10, since it needs the live server.
 
 ### Original M9 plan
 

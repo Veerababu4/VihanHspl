@@ -60,7 +60,7 @@ export function SlotPicker({
                 }`}
               >
                 <span className="block font-medium">{shortDate(d.date)}</span>
-                <span className={`block text-xs ${selected ? 'text-white/80' : ''}`}>
+                <span className={`block text-xs ${selected ? 'text-white' : ''}`}>
                   {full ? t('booking.none') : t('booking.freeCount', { count: d.openSlots })}
                 </span>
               </button>
@@ -87,7 +87,7 @@ export function SlotPicker({
                 }`}
               >
                 {timeOf(s.startAt)}
-                <span className={`block text-xs font-normal ${s.id === slotId ? 'text-white/80' : 'text-slate-500'}`}>
+                <span className={`block text-xs font-normal ${s.id === slotId ? 'text-white' : 'text-slate-500'}`}>
                   {t('booking.tokenShort', { token: s.tokenNo })}
                 </span>
               </button>

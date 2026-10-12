@@ -270,10 +270,10 @@ export function BookingPage() {
                 </dd>
               </div>
             )}
-            {doctor && doctorWorksHere && doctor.consultationFee != null && (
-              <p className="text-slate-600">{t('booking.fee', { fee: formatFee(doctor.consultationFee) })}</p>
-            )}
           </dl>
+          {doctor && doctorWorksHere && doctor.consultationFee != null && (
+            <p className="mt-3 text-slate-600">{t('booking.fee', { fee: formatFee(doctor.consultationFee) })}</p>
+          )}
         </aside>
       </div>
     </div>

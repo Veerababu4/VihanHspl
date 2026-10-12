@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 
 import { useBranches, useGallery, type GalleryImage } from '../../api/public'
 import { Seo } from '../../components/Seo'
+import { useDialogFocus } from '../../lib/dialogFocus'
 
 /** Hospital photos, filterable by branch (FR-P5). */
 export function GalleryPage() {
@@ -45,18 +46,6 @@ export function GalleryPage() {
 export function GalleryGrid({ images }: { images: GalleryImage[] }) {
   const { t } = useTranslation()
   const [openIndex, setOpenIndex] = useState<number | null>(null)
-  const open = openIndex === null ? null : images[openIndex]
-
-  useEffect(() => {
-    if (openIndex === null) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenIndex(null)
-      if (e.key === 'ArrowRight') setOpenIndex((i) => (i === null ? i : (i + 1) % images.length))
-      if (e.key === 'ArrowLeft') setOpenIndex((i) => (i === null ? i : (i - 1 + images.length) % images.length))
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [openIndex, images.length])
 
   return (
     <>
@@ -81,33 +70,61 @@ export function GalleryGrid({ images }: { images: GalleryImage[] }) {
         ))}
       </ul>
 
-      {open && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={open.title ?? t('gallery.title')}
-          className="fixed inset-0 z-30 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setOpenIndex(null)}
-        >
-          <figure className="max-h-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
-            <img src={open.imageUrl} alt={open.title ?? ''} className="max-h-[80vh] w-auto rounded-lg" />
-            <figcaption className="mt-2 flex items-center justify-between gap-4 text-white">
-              <span>
-                {open.title}
-                {open.caption && <span className="text-white/70"> — {open.caption}</span>}
-              </span>
-              <button
-                type="button"
-                autoFocus
-                onClick={() => setOpenIndex(null)}
-                className="rounded-md bg-white/20 px-3 py-1 hover:bg-white/30"
-              >
-                {t('gallery.close')}
-              </button>
-            </figcaption>
-          </figure>
-        </div>
+      {openIndex !== null && (
+        <Lightbox images={images} index={openIndex} onIndex={setOpenIndex} onClose={() => setOpenIndex(null)} />
       )}
     </>
+  )
+}
+
+/** Full-size image; arrow keys step through the images. */
+function Lightbox({
+  images,
+  index,
+  onIndex,
+  onClose,
+}: {
+  images: GalleryImage[]
+  index: number
+  onIndex: (index: number) => void
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const ref = useRef<HTMLDivElement>(null)
+  const open = images[index]
+  useDialogFocus(ref, onClose)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') onIndex((index + 1) % images.length)
+      if (e.key === 'ArrowLeft') onIndex((index - 1 + images.length) % images.length)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [index, images.length, onIndex])
+
+  return (
+    <div
+      ref={ref}
+      role="dialog"
+      aria-modal="true"
+      aria-label={open.title ?? t('gallery.title')}
+      tabIndex={-1}
+      className="fixed inset-0 z-30 flex items-center justify-center bg-black/80 p-4 focus:outline-none"
+      onClick={onClose}
+    >
+      <figure className="max-h-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
+        <img src={open.imageUrl} alt={open.title ?? ''} className="max-h-[80vh] w-auto rounded-lg" />
+        <figcaption className="mt-2 flex items-center justify-between gap-4 text-white">
+          <span>
+            {open.title}
+            {open.caption && <span className="text-white/70"> — {open.caption}</span>}
+          </span>
+          <button type="button" onClick={onClose} className="rounded-md bg-white/20 px-3 py-1 hover:bg-white/30">
+            {t('gallery.close')}
+          </button>
+        </figcaption>
+      </figure>
+    </div>
   )
 }

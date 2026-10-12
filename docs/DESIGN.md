@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Version** | 0.12 — free hosting plan §16 (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3 · v0.9: M6 reception, dashboard, reports §10.4–10.6, §11.4 · v0.10: M7 patients, Aadhaar §10.7, §11.5 · v0.11: M8 clinical §11.6 · v0.12: free hosting on Oracle Cloud Always Free §16) |
-| **Date** | 2026-10-11 |
+| **Version** | 0.13 — M9 hardening: security headers §12.4, E2E / performance / accessibility §15 (v0.2: hosting path §16.1–16.2, gap analysis §19, reschedule, reports · v0.3: all open questions decided §17 · v0.4: M1 Foundation done, versions pinned §7, local setup §14 · v0.5: M2 public website + admin APIs, admin screens moved to M3 §18 · v0.6: M3 auth, users, audit, admin screens §12.2 · v0.7: M4 scheduling §10.2 · v0.8: M5 booking §10.3 · v0.9: M6 reception, dashboard, reports §10.4–10.6, §11.4 · v0.10: M7 patients, Aadhaar §10.7, §11.5 · v0.11: M8 clinical §11.6 · v0.12: free hosting on Oracle Cloud Always Free §16 · v0.13: M9 hardening §12.4, §15) |
+| **Date** | 2026-10-12 |
 | **Owner** | Veera |
-| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → M4 ✅ → M5 ✅ → M6 ✅ → M7 ✅ → **M8 clinical complete (2026-10-07)** → M9 next |
+| **Status** | Signed off → M1 ✅ → M2 ✅ → M3 ✅ → M4 ✅ → M5 ✅ → M6 ✅ → M7 ✅ → M8 ✅ → **M9 hardening complete (2026-10-12)** → M10 deployment next |
 
 > **How to review:** Read sections 1–6 for *what* we are building, 7–12 for *how*, and 13–16 for setup/deployment/plan.
 > **Section 19 explains how the 8 additional requirements found during the initial review are handled.**
@@ -890,6 +890,9 @@ Patient data (health records, Aadhaar) is **sensitive personal data** under Indi
 - Input validation (Bean Validation + Zod on frontend). JPA parameter binding → no SQL injection.
 - File upload: max 5 MB, allow JPEG/PNG/WebP, verify magic bytes, re-encode/resize (strips EXIF), random file names.
 - HTTPS everywhere (Caddy / host-provided TLS). Security headers (CSP, HSTS, X-Content-Type-Options, frame-ancestors).
+  *As built (M9):* **API** answers (Spring Security, `SecurityConfig`) carry `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'` (Swagger UI, local only, is exempt because it runs scripts), `Referrer-Policy: no-referrer`, a `Permissions-Policy` that turns off camera, microphone, location, payment and USB, HSTS (1 year, sub-domains, sent over HTTPS only) and Spring's defaults (`nosniff`, `X-Frame-Options: DENY`, no-cache); `FoundationIntegrationTest` checks them.
+  The **website** headers are in `frontend/security-headers.ts`: CSP `default-src 'self'`, with only Cloudflare Turnstile (`https://challenges.cloudflare.com`, script + frame) and the Google Maps embed (frame) allowed from outside; no `unsafe-inline` and no `unsafe-eval` (Zod runs `jitless`); `frame-ancestors 'none'`; plus `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, the same Permissions-Policy and `Cross-Origin-Opener-Policy: same-origin`. `npm run preview` sends them. In production `deploy/Caddyfile` (draft, finished in M10) sends the same set plus HSTS and `upgrade-insecure-requests`; `security-headers.test.ts` fails if the two drift apart. The dev server (`npm run dev`) sends none of them, because Vite's hot reload needs inline scripts. Every E2E test (§15) fails on a CSP violation, so a new outside resource can't slip in unnoticed.
+  The Vite dev proxy keeps the `Host` header (`changeOrigin: false`), so `/api` is same-origin locally, as it will be behind Caddy. In the `cloud` profile the backend listens on `127.0.0.1` only (`SERVER_ADDRESS`): only Caddy on the same VM can reach it, so the `X-Forwarded-*` headers it sets can be trusted.
 - CORS restricted to configured origins.
 - Logs: no Aadhaar, no clinical text, mobile masked (`98XXXXXX21`).
 - Secrets only in env vars / `.env` (git-ignored). DB user for the app is **not** the ADMIN user.
@@ -983,6 +986,12 @@ frontend> npm install ; npm run dev       → http://localhost:5173
 | Manual UAT | Checklist per milestone | Run with real hospital data before go-live |
 
 Target: ≥ 70 % line coverage on service layer; all role-permission rules covered by tests.
+
+*As built (M9):*
+- **E2E** (`frontend/e2e`, `npm run e2e`): Playwright drives the installed Microsoft Edge (no browser download) against the **production build** served by `vite preview` on port 4173 with the real security headers, and the local backend + Oracle with the fictional sample data. One worker, because the flows share one database and per-IP rate limits. Flows: public pages; book online → find the booking → reschedule → cancel; public pages at phone width never scroll sideways; walk-in at reception → doctor completes the visit → the dashboard counts it; reception never reaches clinical pages. A shared fixture fails **every** test on a CSP violation or a browser error.
+- **Accessibility** (`e2e/a11y.spec.ts`): axe-core checks for WCAG 2.1 A + AA on every public page, every step of the booking wizard (including the form with errors), every staff screen, a dialog, and the doctor's queue, visit and history screens. A keyboard test opens dialogs with Enter, tabs around them both ways (focus must stay inside), closes them with Escape and checks that focus goes back to the button that opened them. Fixes made: brand-600 darkened to `#0e7a73` (5.2:1 on white), grey hint text one shade darker, white (not 80 % white) text on selected date and time chips, correct `<dl>` structure, underlined phone links, and a shared `useDialogFocus` hook (`lib/dialogFocus.ts`) for the staff `Modal` and the gallery lightbox: focus moves in (the first field, else the dialog itself), Tab / Shift+Tab wrap inside, Escape closes, focus returns. Automated checks find about half of all problems; the manual screen-reader and zoom checks are in `docs/UAT-CHECKLIST.md`.
+- **Performance** (`PerformanceCheckTest`, tag `perf`, not part of `mvnw test`; run `.\mvnw test -Dgroups=perf -Dperf.excluded=`): loads about one year of data into the throwaway Testcontainers database (30,000 patients, 178,000 slots, 140,000 appointments, 112,000 visits, 224,000 prescription lines, 300,000 audit rows), then times 20 heavy API calls (dashboard, the six reports incl. an XLSX export, slot board, appointment list, patient search, profile and visits, the doctor's queue and history, the audit log, public slot days). Limit 1 s per call; **all were under 0.5 s** (slowest: the 31-day daily register, 0.49 s for 1.4 MB, and the first audit log page, 0.35 s). The existing indexes were enough; none were added.
+- **UAT**: `docs/UAT-CHECKLIST.md`, a step-by-step list for hospital staff (per role) to run against real data before go-live.
 
 ---
 
@@ -1084,7 +1093,7 @@ Each milestone ends with: working build, tests passing, demo on local, your revi
 | **M6** ✅ | Reception & dashboard | Appointment list, status workflow, check-in + patient linking, dashboard (doctor/branch/network), export. *Also built:* walk-ins, staff reschedule, "patients to call" list, end-of-day no-show job, the six reports of FR-D6 (CSV / XLSX / print), minimal patient registration (UHID) needed for check-in |
 | **M7** ✅ | Patients | Registration (Aadhaar encryption, duplicates), search, profile, visit list. *Also built:* edit with field-level audit, UHID on online / counter booking, booked-for-patient shortcut at check-in, 40 fictional sample patients |
 | **M8** ✅ | Clinical | Doctor queue, visit entry, prescriptions, medical profile, history, print prescription. *Also built:* allergy warnings in the queue and on the visit, "Open visit" from the appointment list, sample past visits |
-| **M9** | Hardening & UAT | Security headers, E2E tests, performance check, accessibility pass, UAT with real data |
+| **M9** ✅ | Hardening & UAT | Security headers, E2E tests, performance check, accessibility pass, UAT with real data. *As built:* headers on the API and the website (§12.4), Playwright E2E + axe-core accessibility suite on the production build, keyboard focus handling in dialogs, performance check on a year of data (§15), `docs/UAT-CHECKLIST.md`. *Moved to M10:* running the UAT with real data, which needs the live server |
 | **M10** | Deployment | OCI Always Free (Hyderabad): ADB + A1 VM, Caddy HTTPS serving the frontend + `/api`, cloud `.env`, Pay As You Go upgrade + budget alert, UptimeRobot, nightly backups + tested restore, go-live checklist (§16) |
 
 ---
@@ -1206,4 +1215,4 @@ The original input had 10 points. The initial review found **8 further requireme
 
 ---
 
-*End of document — v0.11.*
+*End of document — v0.13.*

@@ -147,6 +147,26 @@ cd frontend; npm run lint; npm run typecheck; npm run build
 Run one backend test class: `.\mvnw test -Dtest=FoundationIntegrationTest`.
 Run one frontend test file: `npx vitest run src/features/public/HomePage.test.tsx`.
 
+**End-to-end and accessibility tests** (Playwright, `frontend/e2e`). Start Docker, the database and the backend
+first. They use the installed Microsoft Edge, so there is no browser download:
+
+```powershell
+cd frontend; npm run e2e                      # builds the site, serves it on :4173 with the production headers, runs every flow
+npx playwright test e2e/a11y.spec.ts          # only the WCAG 2.1 AA (axe-core) and keyboard checks
+npx playwright show-report                    # HTML report, with a trace of any failure
+```
+
+Every E2E test fails on a Content-Security-Policy violation or a browser error. The tests use the sample logins
+(`DEV_SAMPLE_PASSWORD` from `backend/.env`, or set `E2E_PASSWORD`) and add bookings and walk-ins to the local database.
+
+**Performance check** (run on request, not part of `mvnw test`): `cd backend; .\mvnw test -Dgroups=perf -Dperf.excluded=`.
+It loads a year of data into the throwaway test container (never the development database) and times the heavy screens.
+
+**Production build with the real security headers:** `cd frontend; npm run build; npm run preview` →
+http://localhost:4173 (the dev server on :5173 doesn't send them). In production, Caddy sends the same headers (`deploy/Caddyfile`).
+
+**UAT:** `docs/UAT-CHECKLIST.md` is the go-live checklist for hospital staff.
+
 ## Project layout
 
 ```
@@ -179,10 +199,15 @@ frontend/
   src/components/ layout and shared UI
   src/features/   pages by area (public/, staff/ …); staff pages are lazy-loaded
   src/auth/       staff session (access token in memory, refresh via httpOnly cookie)
-  src/lib/        formatting and SEO (schema.org) helpers
+  src/lib/        formatting, SEO (schema.org) and dialog focus helpers
   public/placeholders/  labelled placeholder images used by the local sample data
   src/locales/    UI text (en.json; Telugu in Phase 2)
-docs/DESIGN.md
+  e2e/            Playwright end-to-end + accessibility tests (npm run e2e)
+  security-headers.ts   website security headers (preview server; mirrored in deploy/Caddyfile)
+deploy/Caddyfile  production web server config (draft, finished in M10)
+docs/DESIGN.md    design, decisions, milestones, as-built notes
+docs/HANDOVER.md  where things stand and how to resume
+docs/UAT-CHECKLIST.md
 ```
 
 ## Conventions

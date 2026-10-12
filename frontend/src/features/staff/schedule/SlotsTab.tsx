@@ -84,7 +84,7 @@ export function SlotsTab({ doctorId, branches, onChanged }: ScheduleTabProps) {
             }`}
           >
             <span className="block font-medium">{shortDate(d)}</span>
-            <span className={`block text-xs ${d === day ? 'text-white/80' : 'text-slate-500'}`}>{countFor(d)} open</span>
+            <span className={`block text-xs ${d === day ? 'text-white' : 'text-slate-500'}`}>{countFor(d)} open</span>
           </button>
         ))}
       </div>

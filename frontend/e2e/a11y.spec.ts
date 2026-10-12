@@ -1,5 +1,5 @@
 import { AxeBuilder } from '@axe-core/playwright'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect, login, test } from './fixtures.ts'
 
@@ -50,6 +50,34 @@ test('staff screens meet WCAG 2.1 AA (automated checks)', async ({ page }) => {
   await page.goto('/staff/admin/users')
   await page.getByRole('button', { name: 'Add user' }).click()
   await expectAccessible(page, 'dialog: new staff user')
+})
+
+/** Opens a dialog from the keyboard, tabs around it both ways, closes it with Escape. */
+async function expectFocusTrapped(page: Page, opener: Locator, label: string): Promise<void> {
+  await opener.focus()
+  await page.keyboard.press('Enter')
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  const focusInside = () => dialog.evaluate((d) => d.contains(document.activeElement))
+  expect(await focusInside(), `${label}: focus moves into the dialog`).toBe(true)
+  for (let i = 0; i < 30; i++) {
+    await page.keyboard.press(i % 4 === 3 ? 'Shift+Tab' : 'Tab')
+    expect(await focusInside(), `${label}: focus after key ${i + 1}`).toBe(true)
+  }
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(opener, `${label}: focus returns to the opener`).toBeFocused()
+}
+
+test('dialogs keep keyboard focus inside and give it back', async ({ page }) => {
+  await page.goto('/gallery')
+  await expectFocusTrapped(page, page.getByRole('button', { name: /^Open photo/ }).first(), 'gallery lightbox')
+
+  await login(page, 'itadmin')
+  await page.goto('/staff/admin/users')
+  await expectFocusTrapped(page, page.getByRole('button', { name: 'Add user' }), 'new staff user')
+  await page.goto('/staff/admin/doctors')
+  await expectFocusTrapped(page, page.getByRole('button', { name: 'Add doctor' }), 'new doctor')
 })
 
 test('doctor screens meet WCAG 2.1 AA (automated checks)', async ({ page }) => {

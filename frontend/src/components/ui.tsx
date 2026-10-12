@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { useId, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useDialogFocus } from '../lib/dialogFocus'
 
 // Small UI kit for the staff portal (DESIGN.md §7: "a small component kit").
 
@@ -87,7 +88,7 @@ export function Badge({ tone = 'neutral', children }: { tone?: 'neutral' | 'good
   return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${styles[tone]}`}>{children}</span>
 }
 
-/** Accessible modal dialog: focus moves in, Escape closes, focus returns afterwards. */
+/** Accessible modal dialog: focus moves in and stays inside, Escape closes, focus returns afterwards. */
 export function Modal({
   title,
   onClose,
@@ -102,16 +103,7 @@ export function Modal({
   const { t } = useTranslation()
   const ref = useRef<HTMLDivElement>(null)
   const titleId = useId()
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null
-    ref.current?.querySelector<HTMLElement>('input, select, textarea')?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      previouslyFocused?.focus()
-    }
-  }, [onClose])
+  useDialogFocus(ref, onClose)
   return (
     <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/40 p-4 sm:items-center">
       <div
@@ -119,7 +111,8 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`w-full rounded-xl bg-white shadow-xl ${wide ? 'max-w-3xl' : 'max-w-lg'}`}
+        tabIndex={-1}
+        className={`w-full rounded-xl bg-white shadow-xl focus:outline-none ${wide ? 'max-w-3xl' : 'max-w-lg'}`}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
           <h2 id={titleId} className="text-lg font-semibold text-slate-900">
